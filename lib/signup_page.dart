@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'home_page.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'otp_verification.dart';
 
 class SignupPage extends StatefulWidget {
   @override
@@ -7,40 +9,45 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
-  final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Email is required';
-    }
-    String pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}\$';
-    RegExp regex = RegExp(pattern);
-    if (!regex.hasMatch(value)) {
-      return 'Enter a valid email (e.g., example@gmail.com)';
-    }
-    return null;
-  }
-
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Password is required';
-    }
-    if (value.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
-    return null;
-  }
-
-  void _signup(BuildContext context) {
+  Future<void> _sendOtp() async {
     if (_formKey.currentState!.validate()) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+      final url = Uri.parse('http://localhost:5000 /api/user/send-otp');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': emailController.text}),
       );
+      
+      if (response.statusCode == 200) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OtpVerificationPage(email: emailController.text),
+          ),
+        );
+      } else {
+        _showErrorDialog("Failed to send OTP. Try again.");
+      }
     }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -73,42 +80,27 @@ class _SignupPageState extends State<SignupPage> {
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
                   SizedBox(height: 10),
                   TextFormField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.person, color: Colors.blueGrey),
-                      labelText: 'Name',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  TextFormField(
                     controller: emailController,
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.email, color: Colors.blueGrey),
-                      labelText: 'Email',
+                      labelText: 'Email Address',
                       border: OutlineInputBorder(),
                     ),
-                    validator: _validateEmail,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      return null;
+                    },
                   ),
                   SizedBox(height: 10),
-                  TextFormField(
-                    controller: passwordController,
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.lock, color: Colors.blueGrey),
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
-                    ),
-                    obscureText: true,
-                    validator: _validatePassword,
-                  ),
-                  SizedBox(height: 20),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueGrey,
+                      backgroundColor: Colors.amber[700],
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: () => _signup(context),
-                    child: Text('SIGN UP'),
+                    onPressed: _sendOtp,
+                    child: Text('Send OTP'),
                   ),
                 ],
               ),

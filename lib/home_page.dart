@@ -11,6 +11,7 @@ import 'dart:math';
 import 'note_page.dart';
 
 
+
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
@@ -21,13 +22,37 @@ class _HomePageState extends State<HomePage> {
   final List<String> categories = ["All", "Work", "Personal", "Wishlist", "Birthday"];
   String selectedCategory = "All";
   List<Map<String, dynamic>> notes = [];
+  List<Map<String, dynamic>> displayedNotes = [];
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
+  bool selectAll = false;
+  bool showSearchBar = false;
+  TextEditingController searchController = TextEditingController();
+  List<bool> selectedNotes = [];
 
   void _onCategorySelected(String category) {
     setState(() {
       selectedCategory = category;
+      _filterNotes();
+    });
+  }
+
+  void _filterNotes() {
+    setState(() {
+      displayedNotes = selectedCategory == "All"
+          ? notes
+          : notes.where((note) => note['category'] == selectedCategory).toList();
+    });
+  }
+
+  void _searchNotes() {
+    setState(() {
+      displayedNotes = notes
+          .where((note) =>
+              note['title'].toLowerCase().contains(searchController.text.toLowerCase()) ||
+              note['text'].toLowerCase().contains(searchController.text.toLowerCase()))
+          .toList();
     });
   }
 
@@ -46,19 +71,44 @@ class _HomePageState extends State<HomePage> {
     if (newNote != null) {
       setState(() {
         notes.add(newNote);
+        selectedNotes.add(false);
+        _filterNotes();
       });
     }
   }
+   void _toggleSearchBar() {
+    setState(() {
+      showSearchBar = !showSearchBar;
+      if (!showSearchBar) {
+        searchController.clear();
+        _filterNotes();
+      }
+    });
+  }
+
+  
 
   Widget _buildTasksScreen() {
-    List<Map<String, dynamic>> filteredNotes = selectedCategory == "All"
-        ? notes
-        : notes.where((note) => note['category'] == selectedCategory).toList();
-
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
+          if (showSearchBar)
+            TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: "Search Notes...",
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.clear),
+                  onPressed: () {
+                    searchController.clear();
+                    _searchNotes();
+                  },
+                ),
+              ),
+              onChanged: (value) => _searchNotes(),
+            ),
+          
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -76,27 +126,37 @@ class _HomePageState extends State<HomePage> {
                   .toList(),
             ),
           ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: selectAll,
+                onChanged: (value) {
+                  setState(() {
+                    selectAll = value!;
+                  });
+                },
+              ),
+              Text("Select All")
+            ],
+          ),
           Expanded(
-            child: filteredNotes.isEmpty
-                ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          "Click here to create your first task.",
-                          style:
-                              TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                    ],
-                  )
+            child: displayedNotes.isEmpty
+                ? Center(child: Text("Click here to create your first task"))
                 : ListView.builder(
-                    itemCount: filteredNotes.length,
+                    itemCount: displayedNotes.length,
                     itemBuilder: (context, index) {
                       return Card(
-                        color: filteredNotes[index]['color'],
+                        color: displayedNotes[index]['color'],
                         child: ListTile(
+                        leading: Checkbox(
+                            value: selectedNotes[index],
+                            onChanged: (value) {
+                              setState(() {
+                                selectedNotes[index] = value ?? false;
+                              });
+                            },
+                          ),
                           title: GestureDetector(
                             onTap: () async {
                               final updatedNote = await Navigator.push(
@@ -104,25 +164,27 @@ class _HomePageState extends State<HomePage> {
                                 MaterialPageRoute(
                                   builder: (context) => NotePage(
                                     categories: categories,
-                                    existingNote: filteredNotes[index],
+                                    existingNote: displayedNotes[index],
                                   ),
                                 ),
                               );
                               if (updatedNote != null) {
                                 setState(() {
-                                  int noteIndex = notes.indexOf(filteredNotes[index]);
+                                  int noteIndex = notes.indexOf(displayedNotes[index]);
                                   notes[noteIndex] = updatedNote;
+                                  _filterNotes();
                                 });
                               }
                             },
-                            child: Text(filteredNotes[index]['title']),
+                            child: Text(displayedNotes[index]['title']),
                           ),
-                          subtitle: Text("Category: ${filteredNotes[index]['category']}"),
+                          subtitle: Text("Category: ${displayedNotes[index]['category']}"),
                           trailing: IconButton(
                             icon: Icon(Icons.delete),
                             onPressed: () {
                               setState(() {
-                                notes.remove(filteredNotes[index]);
+                                notes.remove(displayedNotes[index]);
+                                _filterNotes();
                               });
                             },
                           ),
@@ -136,7 +198,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildMineScreen() {
+   Widget _buildMineScreen() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -155,6 +217,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  
   Widget _buildCalendarScreen() {
   return Column(
     children: [
@@ -182,13 +245,22 @@ class _HomePageState extends State<HomePage> {
   );
 }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Sticky Notes"),
         backgroundColor: const Color.fromARGB(255, 212, 173, 245),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              setState(() {
+                showSearchBar = !showSearchBar;
+              });
+            },
+          ),
+        ],
       ),
       body: _selectedIndex == 0
           ? _buildTasksScreen()

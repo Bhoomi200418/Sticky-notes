@@ -20,7 +20,7 @@ class _LoginPageState extends State<LoginPage> {
     if (_formKey.currentState!.validate()) {
       String email = emailController.text.trim();
       String password = passwordController.text.trim();
-      var url = Uri.parse("http://localhost:3000/api/user/login");
+      var url = Uri.parse("http://localhost:5000/api/user/login");
       print("Sending request to: $url");
       try {
         var response = await http.post(
@@ -28,9 +28,6 @@ class _LoginPageState extends State<LoginPage> {
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({"email": email, "password": password}),
         );
-
-        print("Response status: \${response.statusCode}");
-        print("Response body: \${response.body}");
 
         if (response.statusCode == 200) {
           var data = jsonDecode(response.body);
@@ -46,7 +43,9 @@ class _LoginPageState extends State<LoginPage> {
 
           if (errorMessage.contains("Email not registered")) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("This email is not registered. Please sign up first.")),
+              SnackBar(
+                  content: Text(
+                      "This email is not registered. Please sign up first.")),
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -170,14 +169,6 @@ class _LoginPageState extends State<LoginPage> {
                         style: TextStyle(color: Colors.blueGrey)),
                   ),
                   SizedBox(height: 10),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: () => _signInWithGoogle(context),
-                    child: Text('Sign in with Google'),
-                  ),
                 ],
               ),
             ),

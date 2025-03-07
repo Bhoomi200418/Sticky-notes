@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class NotePage extends StatefulWidget {
   final List<String> categories;
@@ -14,6 +16,10 @@ class _NotePageState extends State<NotePage> {
   TextEditingController _titleController = TextEditingController();
   String _selectedCategory = "All";
   Color _selectedColor = Colors.yellow;
+  bool _isLoading = false;
+
+final String apiUrl = "http://localhost:5000/api/notes"; 
+  
 
   @override
   void initState() {
@@ -25,13 +31,65 @@ class _NotePageState extends State<NotePage> {
     }
   }
 
-  void _saveNote() {
+  // void _saveNote() {
+  //   Map<String, dynamic> note = {
+  //     'title': _titleController.text,
+  //     'category': _selectedCategory,
+  //     'color': _selectedColor,
+  //   };
+  //   Navigator.pop(context, note);
+  // }
+
+  Future<void> _saveNote() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     Map<String, dynamic> note = {
       'title': _titleController.text,
       'category': _selectedCategory,
-      'color': _selectedColor,
+      'color': _selectedColor.toString(),
+      'userId': '123456', // Replace with actual user ID
     };
-    Navigator.pop(context, note);
+  
+   try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(note),
+      );
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        print("Note Created: ${response.body}");
+        Navigator.pop(context, note);
+      } else {
+        print("Error Creating Note: ${response.body}");
+        _showErrorDialog("Failed to create note. Try again.");
+      }
+    } catch (error) {
+      print("Error: $error");
+      _showErrorDialog("Network error. Please check your connection.");
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
