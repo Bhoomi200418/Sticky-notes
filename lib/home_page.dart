@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'signup_page.dart';
 import 'home_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'note_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -11,8 +13,10 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
+
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+   String? _email;
   final List<String> categories = [
     "All",
     "Work",
@@ -31,6 +35,25 @@ class _HomePageState extends State<HomePage> {
   List<bool> selectedNotes = [];
   bool isSelectAll = false; // Tracks "Select All" state
   bool isSortedByDate = false; // Tracks sorting state
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEmail(); // Load email on startup
+  }
+
+  Future<void> _loadEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _email = prefs.getString('email') ?? 'No email found';
+    });
+  }
+
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('email');
+    Navigator.pushReplacementNamed(context, '/login');
+  }
 
   void _onCategorySelected(String category) {
     setState(() {
@@ -70,20 +93,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _navigateToNotePage() async {
-  final newNote = await Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => NotePage(categories: categories)),
-  );
+    final newNote = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => NotePage(categories: categories)),
+    );
 
-  if (newNote != null) {
-    setState(() {
-      newNote['date'] = DateTime.now(); // Add current timestamp
-      notes.add(newNote);
-      selectedNotes.add(false);
-      _filterNotes();
-    });
+    if (newNote != null) {
+      setState(() {
+        newNote['date'] = DateTime.now(); // Add current timestamp
+        notes.add(newNote);
+        selectedNotes.add(false);
+        _filterNotes();
+      });
+    }
   }
-}
 
   void _toggleSearchBar() {
     setState(() {
@@ -155,8 +178,7 @@ class _HomePageState extends State<HomePage> {
                           selectedColor: const Color.fromARGB(255, 82, 164,
                               231), // Background color when selected
                           side: BorderSide(
-                              color: const Color.fromARGB(
-                                  255, 61, 184, 233)), // Optional border
+                              color: const Color.fromRGBO(61, 184, 233, 1)), // Optional border
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -239,9 +261,10 @@ class _HomePageState extends State<HomePage> {
                         child: ListTile(
                           leading: Checkbox(
                             value: selectedNotes[index],
-                            activeColor: const Color.fromARGB(255, 255, 255, 255), // Change checkbox color
+                            activeColor: const Color.fromARGB(
+                                255, 255, 255, 255), // Change checkbox color
                             checkColor: Color.fromARGB(255, 82, 164, 231),
-                               // Checkmark color inside the checkbox
+                            // Checkmark color inside the checkbox
                             onChanged: (value) {
                               setState(() {
                                 selectedNotes[index] = value ?? false;
@@ -299,32 +322,31 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-Widget _buildMineScreen() {
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.person,
-            size: 100, color: const Color.fromARGB(255, 8, 104, 189)),
-        SizedBox(height: 10),
-        Text("user@example.com",
-            style: TextStyle(
-                fontSize: 14, color: const Color.fromARGB(255, 0, 0, 0))),
-        SizedBox(height: 10),
-        ElevatedButton(
-          onPressed: () {},
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color.fromARGB(255, 82, 164, 231), // Red background for logout
-            foregroundColor: Colors.white, // White text color for better visibility
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12), // Optional: Adds padding
+  Widget _buildMineScreen() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.person,
+              size: 100, color: const Color.fromARGB(255, 8, 104, 189)),
+          SizedBox(height: 10),
+          Text(_email ?? 'Loading...',
+              style: TextStyle(
+                  fontSize: 14, color: const Color.fromARGB(255, 0, 0, 0))),
+          SizedBox(height: 19),
+          ElevatedButton(
+            onPressed: _logout,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 82, 164, 231),
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: Text("Logout"),
           ),
-          child: Text("Logout"),
-        ),
-      ],
-    ),
-  );
-}
-
+        ],
+      ),
+    );
+  }
 
   Widget _buildCalendarScreen() {
     return Column(
@@ -420,7 +442,8 @@ class NotePage extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        backgroundColor: const Color.fromARGB(255, 82, 164, 231), // Match homepage color
+        backgroundColor:
+            const Color.fromARGB(255, 82, 164, 231), // Match homepage color
         actions: [
           IconButton(
             icon: Icon(Icons.save, color: Colors.white),
@@ -452,7 +475,8 @@ class NotePage extends StatelessWidget {
                   controller: titleController,
                   decoration: InputDecoration(
                     hintText: "Title",
-                    hintStyle: TextStyle(color: const Color.fromARGB(255, 0, 0, 0)),
+                    hintStyle:
+                        TextStyle(color: const Color.fromARGB(255, 0, 0, 0)),
                     border: InputBorder.none,
                   ),
                 ),
@@ -469,7 +493,8 @@ class NotePage extends StatelessWidget {
                 child: DropdownButtonFormField<String>(
                   decoration: InputDecoration(
                     labelText: "Category",
-                    labelStyle: TextStyle(color: const Color.fromARGB(255, 0, 0, 0)),
+                    labelStyle:
+                        TextStyle(color: const Color.fromARGB(255, 0, 0, 0)),
                     border: InputBorder.none,
                   ),
                   value: selectedCategory,
@@ -503,7 +528,8 @@ class NotePage extends StatelessWidget {
                     keyboardType: TextInputType.multiline,
                     decoration: InputDecoration(
                       hintText: "Write your note here...",
-                      hintStyle: TextStyle(color: const Color.fromARGB(255, 0, 0, 0)),
+                      hintStyle:
+                          TextStyle(color: const Color.fromARGB(255, 0, 0, 0)),
                       border: InputBorder.none,
                     ),
                   ),

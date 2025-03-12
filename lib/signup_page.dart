@@ -76,7 +76,7 @@ class _SignupPageState extends State<SignupPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('SIGN UP',
+                  Text('STICK WITH US!',
                       style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
                   SizedBox(height: 10),
                   TextFormField(

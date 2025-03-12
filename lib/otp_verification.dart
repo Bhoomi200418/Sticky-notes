@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:sticky_notes/signup_page.dart';
 
 class OtpVerificationPage extends StatefulWidget {
   final String email;
@@ -13,25 +14,42 @@ class OtpVerificationPage extends StatefulWidget {
 class _OtpVerificationPageState extends State<OtpVerificationPage> {
   final TextEditingController otpController = TextEditingController();
 
-Future<void> _verifyOtp() async {
-  final url = Uri.parse('http://localhost:5000/api/user/verify-otp');
-  final response = await http.post(
-    url,
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({'email': widget.email, 'otp': otpController.text}),
-  );
+  Future<void> _verifyOtp() async {
+    final url = Uri.parse('http://localhost:5000/api/user/verify-otp');
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': widget.email, 'otp': otpController.text}),
+    );
 
-  print("Response Status: ${response.statusCode}");
-  print("Response Body: ${response.body}");
+    print("Response Status: ${response.statusCode}");
+    print("Response Body: ${response.body}");
 
-  final responseData = jsonDecode(response.body);
+    final responseData = jsonDecode(response.body);
 
-  if (response.statusCode == 200) {
-    Navigator.pushReplacementNamed(context, '/homepage');
-  } else {
-    _showErrorDialog(responseData['message'] ?? "Invalid OTP. Try again.");
+    if (response.statusCode == 200) {
+      String verifiedEmail =
+          responseData['email']; // Extract email from response
+      _showMessage("OTP verified successfully!", isSuccess: true);
+      // Navigate to Signup page with email as argument
+      Navigator.pushReplacementNamed(
+        context,
+        "/verifypage",
+        arguments: {'email': verifiedEmail},
+      );
+    } else {
+      _showMessage(responseData['message'] ?? "Invalid OTP. Try again.");
+    }
   }
-}
+
+  void _showMessage(String message, {bool isSuccess = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isSuccess ? Colors.green : const Color.fromARGB(255, 0, 0, 0),
+      ),
+    );
+  }
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -74,7 +92,10 @@ Future<void> _verifyOtp() async {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text('Enter OTP',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueGrey)),
                 SizedBox(height: 10),
                 TextField(
                   controller: otpController,
@@ -87,7 +108,7 @@ Future<void> _verifyOtp() async {
                 SizedBox(height: 10),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:  const Color.fromRGBO(244, 67, 54, 1),
+                    backgroundColor: const Color.fromRGBO(244, 67, 54, 1),
                     foregroundColor: Colors.white,
                   ),
                   onPressed: _verifyOtp,

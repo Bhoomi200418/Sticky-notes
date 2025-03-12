@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+ // Ensure this is your existing LogoutPage
 import 'signup_page.dart';
 import 'home_page.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/gestures.dart';
+
 class LoginPage extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -14,10 +17,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-
-Future<void> _login() async {
+  Future<void> _login() async {
     final String apiUrl = 'http://localhost:5000/api/user/login';
 
     try {
@@ -31,15 +33,21 @@ Future<void> _login() async {
       );
 
       final responseData = jsonDecode(response.body);
+      print('Response Data: $responseData');  // ✅ Debug
+      print('Full API Response: ${response.body}'); // ✅ Debug
 
       if (response.statusCode == 200) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('email', responseData['email']); // Store email in SharedPreferences
+        await prefs.setString('email', responseData['email']);  // ✅ Save email
+        print('Saved Email in SharedPreferences: ${responseData['email']}');
 
-        Navigator.pushReplacementNamed(context, '/logout');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()), // ✅ Use existing LogoutPage
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(responseData['message'])),
+          SnackBar(content: Text(responseData['message'] ?? 'Login failed')),
         );
       }
     } catch (error) {
@@ -48,85 +56,6 @@ Future<void> _login() async {
         SnackBar(content: Text('Error connecting to server')),
       );
     }
-  }
-  Future<void> _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      String email = emailController.text.trim();
-      String password = passwordController.text.trim();
-      var url = Uri.parse("http://localhost:5000/api/user/login");
-      print("Sending request to: $url");
-      try {
-        var response = await http.post(
-          url,
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({"email": email, "password": password}),
-        );
-
-        if (response.statusCode == 200) {
-          var data = jsonDecode(response.body);
-          print("Login Successful: \${data['message']}");
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Login Successful!")),
-          );
-          await Future.delayed(Duration(seconds: 1));
-          Navigator.pushReplacementNamed(context, "/homepage");
-        } else {
-          var errorData = jsonDecode(response.body);
-          String errorMessage = errorData['error'];
-
-          if (errorMessage.contains("Email not registered")) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                  content: Text(
-                      "This email is not registered. Please sign up first.")),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Login Failed: $errorMessage")),
-            );
-          }
-        }
-      } catch (e) {
-        print("Error: $e");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Something went wrong. Please try again!")),
-        );
-      }
-    }
-  }
-
-  void _signInWithGoogle(BuildContext context) async {
-    try {
-      await _googleSignIn.signIn();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
-    } catch (error) {
-      print(error);
-    }
-  }
-
-  String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Email is required';
-    }
-    String pattern = r'^[a-zA-Z0-9._%+-]+@gmail\.com$';
-    RegExp regex = RegExp(pattern);
-    if (!regex.hasMatch(value)) {
-      return 'Only Gmail accounts are allowed (e.g., example@gmail.com)';
-    }
-    return null;
-  }
-
-  String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Password is required';
-    }
-    if (value.length < 6) {
-      return 'Password must be at least 6 characters';
-    }
-    return null;
   }
 
   @override
@@ -155,11 +84,14 @@ Future<void> _login() async {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('WELCOME',
-                      style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blueGrey)),
+                  Text(
+                    'WELCOME TO STICKY NOTES!',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey,
+                    ),
+                  ),
                   SizedBox(height: 10),
                   TextFormField(
                     controller: emailController,
@@ -168,7 +100,6 @@ Future<void> _login() async {
                       labelText: 'Email',
                       border: OutlineInputBorder(),
                     ),
-                    validator: _validateEmail,
                   ),
                   SizedBox(height: 10),
                   TextFormField(
@@ -179,7 +110,6 @@ Future<void> _login() async {
                       border: OutlineInputBorder(),
                     ),
                     obscureText: true,
-                    validator: _validatePassword,
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
@@ -187,19 +117,32 @@ Future<void> _login() async {
                       backgroundColor: Colors.blueGrey,
                       foregroundColor: Colors.white,
                     ),
-                    onPressed: _submitForm,
+                    onPressed: _login,
                     child: Text('LOGIN'),
                   ),
                   SizedBox(height: 10),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => SignupPage()),
-                      );
-                    },
-                    child: Text("Don't have an account? Sign Up",
-                        style: TextStyle(color: Colors.blueGrey)),
+                  RichText(
+                    text: TextSpan(
+                      text: "Don't have an account? ",
+                      style: TextStyle(color: Colors.black),
+                      children: [
+                        TextSpan(
+                          text: "Sign Up",
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => SignupPage()),
+                              );
+                            },
+                        ),
+                      ],
+                    ),
                   ),
                   SizedBox(height: 10),
                 ],
