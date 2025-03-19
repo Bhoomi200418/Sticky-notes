@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
- // Ensure this is your existing LogoutPage
-import 'signup_page.dart';
-import 'home_page.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/gestures.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/gestures.dart';
+import 'forgot_password_page.dart';
+import 'home_page.dart';
+import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -16,10 +16,8 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  Future<void> _login() async {
+ Future<void> _login() async {
     final String apiUrl = 'http://localhost:5000/api/user/login';
 
     try {
@@ -39,6 +37,8 @@ class _LoginPageState extends State<LoginPage> {
       if (response.statusCode == 200) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('email', responseData['email']);  // ✅ Save email
+        await prefs.setString('userId', responseData['userId']); // ✅ Save userId
+        await prefs.setString('token', responseData['token']); // ✅ Save token
         print('Saved Email in SharedPreferences: ${responseData['email']}');
 
         Navigator.pushReplacement(
@@ -58,97 +58,126 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.blueGrey[50],
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.5),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: Offset(0, 3),
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: Container(
+      padding: EdgeInsets.symmetric(horizontal: 30),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color.fromARGB(255, 30, 50, 228), Color.fromARGB(255, 194, 200, 255)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start, // Align left
+            children: [
+              Center(
+                child: Text(
+                  'LOGIN',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
-              ],
-            ),
-            padding: EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'WELCOME TO STICKY NOTES!',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueGrey,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.email, color: Colors.blueGrey),
-                      labelText: 'Email',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  TextFormField(
-                    controller: passwordController,
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.lock, color: Colors.blueGrey),
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
-                    ),
-                    obscureText: true,
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueGrey,
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: _login,
-                    child: Text('LOGIN'),
-                  ),
-                  SizedBox(height: 10),
-                  RichText(
-                    text: TextSpan(
-                      text: "Don't have an account? ",
-                      style: TextStyle(color: Colors.black),
-                      children: [
-                        TextSpan(
-                          text: "Sign Up",
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => SignupPage()),
-                              );
-                            },
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                ],
               ),
-            ),
+              SizedBox(height: 30),
+              _buildTextInput('Email', controller: emailController),
+              SizedBox(height: 15),
+              _buildTextInput('Password', isPassword: true, controller: passwordController),
+              SizedBox(height: 10),
+
+              // Forgot Password Link
+            Align(
+                  alignment: Alignment.centerRight,
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ForgotPasswordPage()), // ✅ Navigate to Forgot Password Page
+                      );
+                    },
+                    child: Text(
+                      'Forgot password?',
+                      style: TextStyle(
+                        color: const Color.fromARGB(255, 7, 7, 7),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              
+              SizedBox(height: 15),
+              Center(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Color.fromARGB(255, 30, 50, 228),
+                    padding: EdgeInsets.symmetric(vertical: 14, horizontal: 100),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  onPressed: _login,
+                  child: Text(
+                    'LOG IN',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+              
+              SizedBox(height: 10),
+              Center(
+                child: RichText(
+                  text: TextSpan(
+                    text: "Don't have an account? ",
+                    style: TextStyle(color: Colors.white),
+                    children: [
+                      TextSpan(
+                        text: 'Sign Up',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => SignupPage()),
+                            );
+                          },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
+        ),
+      ),
+    ),
+  );
+}
+  Widget _buildTextInput(String hintText,
+      {bool isPassword = false, TextEditingController? controller}) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: TextField(
+        controller: controller, // Assign the optional controller
+        obscureText: isPassword,
+        decoration: InputDecoration(
+          hintText: hintText,
+          border: InputBorder.none,
         ),
       ),
     );

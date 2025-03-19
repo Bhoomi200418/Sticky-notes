@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sticky_notes/home_page.dart';
 import 'package:sticky_notes/login_page.dart';
-
-import 'package:sticky_notes/signup_page.dart';
-import 'login_page.dart';
 import 'package:sticky_notes/verify_page.dart';
 
 void main() {

@@ -1,9 +1,10 @@
-import 'dart:math'; // For random colors
 import 'package:table_calendar/table_calendar.dart';
 import 'package:flutter/material.dart';
-import 'signup_page.dart';
-import 'home_page.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'note_page.dart';
@@ -13,10 +14,9 @@ class HomePage extends StatefulWidget {
   _HomePageState createState() => _HomePageState();
 }
 
-
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-   String? _email;
+  String? _email;
   final List<String> categories = [
     "All",
     "Work",
@@ -25,21 +25,93 @@ class _HomePageState extends State<HomePage> {
     "Birthday"
   ];
   String selectedCategory = "All";
+  TextEditingController _titleController = TextEditingController();
   List<Map<String, dynamic>> notes = [];
   List<Map<String, dynamic>> displayedNotes = [];
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
+  String userId = "";
+  String token = "your_jwt_token";
+  Color _selectedColor = Colors.white;
   bool showSearchBar = false;
   TextEditingController searchController = TextEditingController();
   List<bool> selectedNotes = [];
-  bool isSelectAll = false; // Tracks "Select All" state
-  bool isSortedByDate = false; // Tracks sorting state
+  bool isSelectAll = false;
+  bool isSortedByDate = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _loadEmail(); // Load email on startup
+    _loadEmail();
+    _fetchNotes(); // Load email on startup
+  }
+
+  Future<void> _fetchNotes() async {
+    try {
+      var response =
+          await http.get(Uri.parse('http://localhost:5000/api/note/all'));
+      if (response.statusCode == 200) {
+        List<Map<String, dynamic>> fetchedNotes =
+            List<Map<String, dynamic>>.from(json.decode(response.body));
+
+        for (var note in fetchedNotes) {
+          if (note['date'] != null) {
+            note['date'] = DateTime.parse(note['date']);
+          }
+        }
+
+        setState(() {
+          notes = fetchedNotes;
+          displayedNotes = List.from(notes);
+          selectedNotes = List.filled(
+              notes.length, false); // Ensure selectedNotes has the correct size
+        });
+
+        print("Fetched notes: ${notes.length}");
+      } else {
+        print("Error fetching notes: ${response.body}");
+      }
+    } catch (e) {
+      print('Error fetching notes: $e');
+    }
+  }
+
+  Future<void> _deleteNote(String id) async {
+    try {
+      var response = await http
+          .delete(Uri.parse('http://localhost:5000/api/note/delete/$id'));
+      if (response.statusCode == 200) {
+        setState(() {
+          notes.removeWhere((note) => note['_id'] == id);
+          displayedNotes = List.from(notes);
+        });
+      }
+    } catch (e) {
+      print('Error deleting note: $e');
+    }
+  }
+
+  void _toggleSortByDate() {
+    if (displayedNotes.isEmpty) {
+      print("No notes to sort.");
+      return;
+    }
+
+    setState(() {
+      isSortedByDate = !isSortedByDate;
+      displayedNotes.sort((a, b) {
+        DateTime dateA =
+            a['date'] is String ? DateTime.parse(a['date']) : a['date'];
+        DateTime dateB =
+            b['date'] is String ? DateTime.parse(b['date']) : b['date'];
+
+        return isSortedByDate
+            ? dateB.compareTo(dateA) // Newest first
+            : dateA.compareTo(dateB); // Oldest first
+      });
+    });
   }
 
   Future<void> _loadEmail() async {
@@ -47,6 +119,28 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _email = prefs.getString('email') ?? 'No email found';
     });
+  }
+
+  void _changeColor(Color color) {
+    setState(() {
+      _selectedColor = color;
+    });
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text("OK"),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _logout() async {
@@ -95,14 +189,17 @@ class _HomePageState extends State<HomePage> {
   void _navigateToNotePage() async {
     final newNote = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => NotePage(categories: categories)),
+      MaterialPageRoute(
+        builder: (context) => NotePage(
+          categories: categories,
+        ),
+      ),
     );
 
     if (newNote != null) {
       setState(() {
-        newNote['date'] = DateTime.now(); // Add current timestamp
         notes.add(newNote);
-        selectedNotes.add(false);
+        selectedNotes.add(false); // Ensure selectedNotes stays in sync
         _filterNotes();
       });
     }
@@ -132,19 +229,6 @@ class _HomePageState extends State<HomePage> {
       for (int i = 0; i < selectedNotes.length; i++) {
         selectedNotes[i] = isSelectAll;
       }
-    });
-  }
-
-  void _toggleSortByDate() {
-    setState(() {
-      isSortedByDate = !isSortedByDate;
-      displayedNotes.sort((a, b) {
-        return isSortedByDate
-            ? (b['date'] as DateTime)
-                .compareTo(a['date'] as DateTime) // Newest First
-            : (a['date'] as DateTime)
-                .compareTo(b['date'] as DateTime); // Oldest First
-      });
     });
   }
 
@@ -178,7 +262,8 @@ class _HomePageState extends State<HomePage> {
                           selectedColor: const Color.fromARGB(255, 82, 164,
                               231), // Background color when selected
                           side: BorderSide(
-                              color: const Color.fromRGBO(61, 184, 233, 1)), // Optional border
+                              color: const Color.fromRGBO(
+                                  61, 184, 233, 1)), // Optional border
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           ),
@@ -251,8 +336,10 @@ class _HomePageState extends State<HomePage> {
                 : ListView.builder(
                     itemCount: filteredNotes.length,
                     itemBuilder: (context, index) {
-                      DateTime noteDate =
-                          filteredNotes[index]['date'] ?? DateTime.now();
+                      DateTime noteDate = filteredNotes[index]['date'] is String
+                          ? DateTime.parse(filteredNotes[index]['date'])
+                          : filteredNotes[index]['date'];
+
                       String formattedDate =
                           "${noteDate.day}/${noteDate.month}/${noteDate.year}";
 
@@ -411,133 +498,6 @@ class _HomePageState extends State<HomePage> {
               icon: Icon(Icons.calendar_today), label: "Calendar"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Mine"),
         ],
-      ),
-    );
-  }
-}
-
-class NotePage extends StatelessWidget {
-  final List<String> categories;
-  final Map<String, dynamic>? existingNote;
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController contentController = TextEditingController();
-  String? selectedCategory;
-
-  NotePage({required this.categories, this.existingNote}) {
-    if (existingNote != null) {
-      titleController.text = existingNote!['title'];
-      contentController.text = existingNote!['text'];
-      selectedCategory = existingNote!['category'];
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Note",
-          style: TextStyle(
-            color: Colors.white, // AppBar text color
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor:
-            const Color.fromARGB(255, 82, 164, 231), // Match homepage color
-        actions: [
-          IconButton(
-            icon: Icon(Icons.save, color: Colors.white),
-            onPressed: () {
-              Navigator.pop(context, {
-                'title': titleController.text,
-                'text': contentController.text,
-                'category': selectedCategory ?? categories.first,
-                'color': const Color.fromARGB(255, 127, 192, 235),
-              });
-            },
-          ),
-        ],
-      ),
-      body: Container(
-        padding: const EdgeInsets.all(16.0),
-        color: const Color(0xFFF3F4F6), // Light background for cleaner look
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: TextField(
-                  controller: titleController,
-                  decoration: InputDecoration(
-                    hintText: "Title",
-                    hintStyle:
-                        TextStyle(color: const Color.fromARGB(255, 0, 0, 0)),
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 15),
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: DropdownButtonFormField<String>(
-                  decoration: InputDecoration(
-                    labelText: "Category",
-                    labelStyle:
-                        TextStyle(color: const Color.fromARGB(255, 0, 0, 0)),
-                    border: InputBorder.none,
-                  ),
-                  value: selectedCategory,
-                  items: categories.map((String category) {
-                    return DropdownMenuItem<String>(
-                      value: category,
-                      child: Text(
-                        category,
-                        style: TextStyle(color: Colors.black),
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    selectedCategory = value;
-                  },
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            Expanded(
-              child: Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: TextField(
-                    controller: contentController,
-                    maxLines: null,
-                    keyboardType: TextInputType.multiline,
-                    decoration: InputDecoration(
-                      hintText: "Write your note here...",
-                      hintStyle:
-                          TextStyle(color: const Color.fromARGB(255, 0, 0, 0)),
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

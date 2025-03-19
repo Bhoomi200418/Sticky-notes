@@ -22,16 +22,11 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       body: jsonEncode({'email': widget.email, 'otp': otpController.text}),
     );
 
-    print("Response Status: ${response.statusCode}");
-    print("Response Body: ${response.body}");
-
     final responseData = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
-      String verifiedEmail =
-          responseData['email']; // Extract email from response
+      String verifiedEmail = responseData['email'];
       _showMessage("OTP verified successfully!", isSuccess: true);
-      // Navigate to Signup page with email as argument
       Navigator.pushReplacementNamed(
         context,
         "/verifypage",
@@ -46,23 +41,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? Colors.green : const Color.fromARGB(255, 0, 0, 0),
-      ),
-    );
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Error"),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("OK"),
-          ),
-        ],
+        backgroundColor: isSuccess ? Colors.green : Colors.black,
       ),
     );
   }
@@ -70,49 +49,59 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blueGrey[50],
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.5),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: Offset(0, 3),
-                ),
-              ],
-            ),
-            padding: EdgeInsets.all(20),
+      body: Container(
+        padding: EdgeInsets.symmetric(horizontal: 30),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [const Color.fromARGB(255, 30, 50, 228), const Color.fromARGB(255, 194, 200, 255)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Enter OTP',
-                    style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blueGrey)),
-                SizedBox(height: 10),
-                TextField(
-                  controller: otpController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Enter OTP',
+                Text(
+                  'ENTER OTP',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 10),
+                SizedBox(height: 30),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: TextField(
+                    controller: otpController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      hintText: 'Enter OTP',
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 25),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromRGBO(244, 67, 54, 1),
-                    foregroundColor: Colors.white,
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color.fromARGB(255, 25, 6, 110),
+                    padding: EdgeInsets.symmetric(vertical: 14, horizontal: 100),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                   onPressed: _verifyOtp,
-                  child: Text('Verify'),
+                  child: Text(
+                    'VERIFY',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),

@@ -1,5 +1,8 @@
 {
   "dependencies": {
     "shared_preferences": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/multer": "^1.4.12"
   }
 }

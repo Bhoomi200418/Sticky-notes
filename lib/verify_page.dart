@@ -67,7 +67,7 @@ class _SignUpPageState extends State<SignUpPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        backgroundColor: isSuccess ? Colors.green : const Color.fromARGB(255, 30, 50, 228),
       ),
     );
   }
@@ -75,97 +75,155 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      // Remove the default white background and keep the gradient
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color.fromARGB(255, 30, 50, 228),
+              const Color.fromARGB(255, 194, 200, 255),
+            ],
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 400),
-              child: Form(
-                key: _formKey,
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(height: MediaQuery.of(context).size.height * 0.1),
+                    // Title
                     const Text(
-                      'Set Your Password',
+                      'SET YOUR PASSWORD',
                       style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromARGB(255, 11, 36, 104)),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: emailController,
-                      decoration: InputDecoration(
-                        labelText: "Email Address",
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
-                      readOnly: true,
                     ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: passwordController,
-                      obscureText: !_isPasswordVisible,
-                      decoration: InputDecoration(
-                        labelText: "Password",
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        suffixIcon: IconButton(
-                          icon: Icon(_isPasswordVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off),
-                          onPressed: () => setState(
-                              () => _isPasswordVisible = !_isPasswordVisible),
-                        ),
-                      ),
-                      validator: (value) => (value == null || value.length < 6)
-                          ? "Password must be at least 6 characters!"
-                          : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: confirmPasswordController,
-                      obscureText: !_isConfirmPasswordVisible,
-                      decoration: InputDecoration(
-                        labelText: "Confirm Password",
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        suffixIcon: IconButton(
-                          icon: Icon(_isConfirmPasswordVisible
-                              ? Icons.visibility
-                              : Icons.visibility_off),
-                          onPressed: () => setState(() =>
-                              _isConfirmPasswordVisible =
-                                  !_isConfirmPasswordVisible),
-                        ),
-                      ),
-                      validator: (value) => (value != passwordController.text)
-                          ? "Passwords do not match!"
-                          : null,
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _submitForm,
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text('Confirm',
-                              style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 20, 2, 70),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 137, vertical: 15),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        elevation: 5,
+                    const SizedBox(height: 5),
+                    const Text(
+                      'TO CONTINUE',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
                       ),
                     ),
                     const SizedBox(height: 30),
+
+                    // Form
+                    Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          // Email TextField
+                          TextFormField(
+                            controller: emailController,
+                            readOnly: true,
+                            decoration: InputDecoration(
+                              labelText: "Email Address",
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.9),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+
+                          // Password TextField
+                          TextFormField(
+                            controller: passwordController,
+                            obscureText: !_isPasswordVisible,
+                            decoration: InputDecoration(
+                              labelText: "Password",
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.9),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _isPasswordVisible
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                ),
+                                onPressed: () => setState(
+                                  () => _isPasswordVisible = !_isPasswordVisible,
+                                ),
+                              ),
+                            ),
+                            validator: (value) =>
+                                (value == null || value.length < 6)
+                                    ? "Password must be at least 6 characters!"
+                                    : null,
+                          ),
+                          const SizedBox(height: 15),
+
+                          // Confirm Password TextField
+                          TextFormField(
+                            controller: confirmPasswordController,
+                            obscureText: !_isConfirmPasswordVisible,
+                            decoration: InputDecoration(
+                              labelText: "Confirm Password",
+                              filled: true,
+                              fillColor: Colors.white.withOpacity(0.9),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _isConfirmPasswordVisible
+                                      ? Icons.visibility
+                                      : Icons.visibility_off,
+                                ),
+                                onPressed: () => setState(
+                                  () => _isConfirmPasswordVisible =
+                                      !_isConfirmPasswordVisible,
+                                ),
+                              ),
+                            ),
+                            validator: (value) =>
+                                (value != passwordController.text)
+                                    ? "Passwords do not match!"
+                                    : null,
+                          ),
+                          const SizedBox(height: 25),
+
+                          // Confirm Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _submitForm,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color.fromARGB(255, 30, 50, 228),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 15, horizontal: 60),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                elevation: 5,
+                              ),
+                              child: _isLoading
+                                  ? const CircularProgressIndicator(
+                                      color: Color.fromARGB(255, 30, 50, 228),
+                                    )
+                                  : const Text(
+                                      'CONFIRM',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
