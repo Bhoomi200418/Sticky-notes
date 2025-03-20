@@ -1,12 +1,8 @@
 import 'package:table_calendar/table_calendar.dart';
 import 'package:flutter/material.dart';
-
 import 'dart:convert';
-
 import 'package:http/http.dart' as http;
-
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'note_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -25,7 +21,6 @@ class _HomePageState extends State<HomePage> {
     "Birthday"
   ];
   String selectedCategory = "All";
-  TextEditingController _titleController = TextEditingController();
   List<Map<String, dynamic>> notes = [];
   List<Map<String, dynamic>> displayedNotes = [];
   CalendarFormat _calendarFormat = CalendarFormat.month;
@@ -33,50 +28,72 @@ class _HomePageState extends State<HomePage> {
   DateTime _focusedDay = DateTime.now();
   String userId = "";
   String token = "your_jwt_token";
-  Color _selectedColor = Colors.white;
   bool showSearchBar = false;
   TextEditingController searchController = TextEditingController();
   List<bool> selectedNotes = [];
   bool isSelectAll = false;
   bool isSortedByDate = false;
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _loadEmail();
-    _fetchNotes(); // Load email on startup
+    _fetchNotes();
   }
 
-  Future<void> _fetchNotes() async {
-    try {
-      var response =
-          await http.get(Uri.parse('http://localhost:5000/api/note/all'));
-      if (response.statusCode == 200) {
-        List<Map<String, dynamic>> fetchedNotes =
-            List<Map<String, dynamic>>.from(json.decode(response.body));
+Future<void> _fetchNotes() async {
+  try {
+    var response = await http.get(Uri.parse('http://localhost:5000/api/note/all'));
 
-        for (var note in fetchedNotes) {
-          if (note['date'] != null) {
-            note['date'] = DateTime.parse(note['date']);
-          }
+    if (response.statusCode == 200) {
+      List<Map<String, dynamic>> fetchedNotes =
+          List<Map<String, dynamic>>.from(json.decode(response.body));
+
+      for (var note in fetchedNotes) {
+        if (note['date'] != null && note['date'].toString().isNotEmpty) {
+          note['date'] = DateTime.tryParse(note['date']) ?? DateTime.now();
+        } else {
+          note['date'] = DateTime.now(); // Assign a default date if null
         }
-
-        setState(() {
-          notes = fetchedNotes;
-          displayedNotes = List.from(notes);
-          selectedNotes = List.filled(
-              notes.length, false); // Ensure selectedNotes has the correct size
-        });
-
-        print("Fetched notes: ${notes.length}");
-      } else {
-        print("Error fetching notes: ${response.body}");
       }
-    } catch (e) {
-      print('Error fetching notes: $e');
+
+      setState(() {
+        notes = fetchedNotes;
+        displayedNotes = List.from(notes);
+        selectedNotes = List.filled(notes.length, false);
+      });
+
+      print("Fetched notes: ${notes.length}");
+    } else {
+      print("Error fetching notes: ${response.body}");
     }
+  } catch (e) {
+    print('Error fetching notes: $e');
   }
+}
+
+//   Future<void> updateNote(String noteId, String title, String content) async {
+//   final String apiUrl = 'http://localhost:5000/api/note/update/$noteId';
+
+//   try {
+//     final response = await http.put(
+//       Uri.parse(apiUrl),
+//       headers: {"Content-Type": "application/json"},
+//       body: jsonEncode({
+//         "title": title,
+//         "content": content,
+//       }),
+//     );
+
+//     if (response.statusCode == 200) {
+//       print("Note updated successfully");
+//     } else {
+//       print("Failed to update note: ${response.body}");
+//     }
+//   } catch (e) {
+//     print("Error: $e");
+//   }
+// }
 
   Future<void> _deleteNote(String id) async {
     try {
@@ -99,19 +116,15 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    setState(() {
-      isSortedByDate = !isSortedByDate;
-      displayedNotes.sort((a, b) {
-        DateTime dateA =
-            a['date'] is String ? DateTime.parse(a['date']) : a['date'];
-        DateTime dateB =
-            b['date'] is String ? DateTime.parse(b['date']) : b['date'];
+setState(() {
+  isSortedByDate = !isSortedByDate;
+  displayedNotes.sort((a, b) {
+    DateTime dateA = a['date'] is DateTime ? a['date'] : DateTime.now();
+    DateTime dateB = b['date'] is DateTime ? b['date'] : DateTime.now();
+    return isSortedByDate ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
+  });
+});
 
-        return isSortedByDate
-            ? dateB.compareTo(dateA) // Newest first
-            : dateA.compareTo(dateB); // Oldest first
-      });
-    });
   }
 
   Future<void> _loadEmail() async {
@@ -123,7 +136,7 @@ class _HomePageState extends State<HomePage> {
 
   void _changeColor(Color color) {
     setState(() {
-      _selectedColor = color;
+      // _selectedColor = color;
     });
   }
 
@@ -199,7 +212,7 @@ class _HomePageState extends State<HomePage> {
     if (newNote != null) {
       setState(() {
         notes.add(newNote);
-        selectedNotes.add(false); // Ensure selectedNotes stays in sync
+        selectedNotes.add(false);
         _filterNotes();
       });
     }
@@ -270,8 +283,7 @@ class _HomePageState extends State<HomePage> {
                           onSelected: (bool selected) {
                             _onCategorySelected(category);
                           },
-                          selected: selectedCategory ==
-                              category, // This is required in Flutter 3.27.1
+                          selected: selectedCategory == category,
                         ),
                       ))
                   .toList(),
@@ -348,10 +360,9 @@ class _HomePageState extends State<HomePage> {
                         child: ListTile(
                           leading: Checkbox(
                             value: selectedNotes[index],
-                            activeColor: const Color.fromARGB(
-                                255, 255, 255, 255), // Change checkbox color
+                            activeColor:
+                                const Color.fromARGB(255, 255, 255, 255),
                             checkColor: Color.fromARGB(255, 82, 164, 231),
-                            // Checkmark color inside the checkbox
                             onChanged: (value) {
                               setState(() {
                                 selectedNotes[index] = value ?? false;
@@ -392,9 +403,16 @@ class _HomePageState extends State<HomePage> {
                           ),
                           trailing: IconButton(
                             icon: Icon(Icons.delete),
-                            onPressed: () {
+                            onPressed: () async {
+                              String noteId = filteredNotes[index]
+                                  ['_id']; // Get the note ID
+
+                              await _deleteNote(
+                                  noteId); // Call the delete function
+
                               setState(() {
-                                notes.remove(filteredNotes[index]);
+                                notes.removeWhere(
+                                    (note) => note['_id'] == noteId);
                                 _filterNotes();
                               });
                             },
