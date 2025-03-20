@@ -41,36 +41,37 @@ class _HomePageState extends State<HomePage> {
     _fetchNotes();
   }
 
-Future<void> _fetchNotes() async {
-  try {
-    var response = await http.get(Uri.parse('http://localhost:5000/api/note/all'));
+  Future<void> _fetchNotes() async {
+    try {
+      var response =
+          await http.get(Uri.parse('http://localhost:5000/api/note/all'));
 
-    if (response.statusCode == 200) {
-      List<Map<String, dynamic>> fetchedNotes =
-          List<Map<String, dynamic>>.from(json.decode(response.body));
+      if (response.statusCode == 200) {
+        List<Map<String, dynamic>> fetchedNotes =
+            List<Map<String, dynamic>>.from(json.decode(response.body));
 
-      for (var note in fetchedNotes) {
-        if (note['date'] != null && note['date'].toString().isNotEmpty) {
-          note['date'] = DateTime.tryParse(note['date']) ?? DateTime.now();
-        } else {
-          note['date'] = DateTime.now(); // Assign a default date if null
+        for (var note in fetchedNotes) {
+          if (note['date'] != null && note['date'].toString().isNotEmpty) {
+            note['date'] = DateTime.tryParse(note['date']) ?? DateTime.now();
+          } else {
+            note['date'] = DateTime.now(); // Assign a default date if null
+          }
         }
+
+        setState(() {
+          notes = fetchedNotes;
+          displayedNotes = List.from(notes);
+          selectedNotes = List.filled(notes.length, false);
+        });
+
+        print("Fetched notes: ${notes.length}");
+      } else {
+        print("Error fetching notes: ${response.body}");
       }
-
-      setState(() {
-        notes = fetchedNotes;
-        displayedNotes = List.from(notes);
-        selectedNotes = List.filled(notes.length, false);
-      });
-
-      print("Fetched notes: ${notes.length}");
-    } else {
-      print("Error fetching notes: ${response.body}");
+    } catch (e) {
+      print('Error fetching notes: $e');
     }
-  } catch (e) {
-    print('Error fetching notes: $e');
   }
-}
 
 //   Future<void> updateNote(String noteId, String title, String content) async {
 //   final String apiUrl = 'http://localhost:5000/api/note/update/$noteId';
@@ -116,15 +117,14 @@ Future<void> _fetchNotes() async {
       return;
     }
 
-setState(() {
-  isSortedByDate = !isSortedByDate;
-  displayedNotes.sort((a, b) {
-    DateTime dateA = a['date'] is DateTime ? a['date'] : DateTime.now();
-    DateTime dateB = b['date'] is DateTime ? b['date'] : DateTime.now();
-    return isSortedByDate ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
-  });
-});
-
+    setState(() {
+      isSortedByDate = !isSortedByDate;
+      displayedNotes.sort((a, b) {
+        DateTime dateA = a['date'] is DateTime ? a['date'] : DateTime.now();
+        DateTime dateB = b['date'] is DateTime ? b['date'] : DateTime.now();
+        return isSortedByDate ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
+      });
+    });
   }
 
   Future<void> _loadEmail() async {
@@ -210,6 +210,7 @@ setState(() {
     );
 
     if (newNote != null) {
+      _fetchNotes();
       setState(() {
         notes.add(newNote);
         selectedNotes.add(false);
@@ -381,6 +382,7 @@ setState(() {
                                 ),
                               );
                               if (updatedNote != null) {
+                                _fetchNotes();
                                 setState(() {
                                   int noteIndex =
                                       notes.indexOf(filteredNotes[index]);
