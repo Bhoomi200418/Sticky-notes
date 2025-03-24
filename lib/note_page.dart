@@ -45,27 +45,27 @@ class _NotePageState extends State<NotePage> {
   String selectedCategory = "All";
   List<Map<String, dynamic>> notes = [];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData(); 
+@override
+void initState() {
+  super.initState();
+  _loadUserData(); 
 
-    if (widget.existingNote != null) {
-      titleController.text = widget.existingNote!['title'] ?? '';
-      contentController.text = widget.existingNote!['text'] ?? '';
-      selectedCategory = widget.existingNote!['category'] ?? 'Uncategorized';
-    }
+  if (widget.existingNote != null) {
+    titleController.text = widget.existingNote!['title'] ?? '';
+    contentController.text = widget.existingNote!['content'] ?? ''; 
+    selectedCategory = widget.existingNote!['category'] ?? 'Uncategorized';
   }
+}
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      token = prefs.getString('token') ?? ''; // ✅ Prevents null token
+      token = prefs.getString('token') ?? ''; 
     });
     print("Loaded Token: $token");
 
     if (token!.isNotEmpty) {
-      // _fetchNotes(); // ✅ Only fetch if token exists
+     
     }
   }
 
@@ -84,8 +84,11 @@ class _NotePageState extends State<NotePage> {
       ),
     );
   }
-Future<void> _updateNote(String noteId, String title, String content) async {
-  print("Updating Note ID: $noteId"); // Debugging statement
+Future<void> _updateNote(String noteId, String title, String content, String category) async {
+  print("Updating Note ID: $noteId");
+  print("📌 Title: $title");
+  print("📌 Content: $content");
+  print("📌 Category: $category");
 
   try {
     var response = await http.put(
@@ -94,20 +97,36 @@ Future<void> _updateNote(String noteId, String title, String content) async {
       body: jsonEncode({
         "title": title,
         "content": content,
+        "category": category
       }),
     );
 
     if (response.statusCode == 200) {
       print("Note updated successfully");
-      Navigator.pop(context, true); // Close the screen after updating
+
+      // Show a success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Note updated successfully!")),
+      );
+
+      Navigator.pop(context, true); 
     } else {
       print("Failed to update note: ${response.body}");
+
+      // Show an error message if the update fails
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to update note. Try again.")),
+      );
     }
   } catch (e) {
     print("Error updating note: $e");
+
+    // Show an error message in case of an exception
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("An error occurred. Please try again.")),
+    );
   }
 }
-
 
  Future<void> _createNote(BuildContext context) async {
     if (titleController.text.trim().isEmpty) {
@@ -122,17 +141,17 @@ Future<void> _updateNote(String noteId, String title, String content) async {
     // ✅ Ensure no null values are sent
     final Map<String, dynamic> requestBody = {
       "title": titleController.text.trim(),
-      "content": contentController.text.trim().isEmpty
-          ? "No content"
-          : contentController.text.trim(),
-      "category": selectedCategory ?? "Uncategorized",
+      "content": contentController.text.trim(),
+          // ? "No content"
+          // : contentController.text.trim(),
+      "category": selectedCategory 
     };
 
     try {
       // ✅ Use proper API URL for mobile devices
       final String apiUrl =
-          "http://localhost:5000/api/note/create"; // Android Emulator
-      // For a real device, use your local IP instead of localhost
+          "http://localhost:5000/api/note/create"; 
+     
 
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -159,7 +178,7 @@ Future<void> _updateNote(String noteId, String title, String content) async {
       }
     } catch (error) {
       print("❌ Error creating note: $error");
-      _showErrorDialog(context, "Something went wrong. Please try again.");
+      _showErrorDialog(context, "Something went wrong. Please try again");
     } finally {
       setState(() {
         _isLoading = false;
@@ -192,9 +211,11 @@ Future<void> _updateNote(String noteId, String title, String content) async {
           if (widget.existingNote != null) {
             // ✅ Call Update API if editing
             await _updateNote(
-              widget.existingNote!['_id'],  // Pass noteId
+              widget.existingNote!['_id'],  
               titleController.text,
               contentController.text,
+              selectedCategory
+           
             );
           } else {
             // ✅ Call Create API if new note

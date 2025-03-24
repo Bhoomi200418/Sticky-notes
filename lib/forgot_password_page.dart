@@ -1,42 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:fluttertoast/fluttertoast.dart';
 
-class ForgotPasswordPage extends StatefulWidget {
+class ForgotPasswordScreen extends StatefulWidget {
   @override
-  _ForgotPasswordPageState createState() => _ForgotPasswordPageState();
+  _ForgotPasswordScreenState createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
-  final TextEditingController emailController = TextEditingController();
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+  TextEditingController emailController = TextEditingController();
+  bool isLoading = false;
 
-  Future<void> _sendResetLink() async {
-    final String apiUrl = 'http://localhost:5000/api/user/forgot-password';
+  Future<void> requestOtp() async {
+    setState(() => isLoading = true);
+    final response = await http.post(
+      Uri.parse('http://localhost:5000/api/user/send-otp-login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': emailController.text.trim()}),
+    );
+    setState(() => isLoading = false);
 
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        body: jsonEncode({
-          'email': emailController.text.trim(),
-        }),
-        headers: {'Content-Type': 'application/json'},
+    if (response.statusCode == 200) {
+      Fluttertoast.showToast(msg: "OTP sent to your email");
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VerifyOtpScreen(email: emailController.text.trim()),
+        ),
       );
-
-      final responseData = jsonDecode(response.body);
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(responseData['message'])),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(responseData['error'] ?? 'Something went wrong!')),
-        );
-      }
-    } catch (error) {
-      print('Error: $error');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to connect to server.')),
-      );
+    } else {
+      Fluttertoast.showToast(msg: "Error: ${jsonDecode(response.body)['message']}");
     }
   }
 
@@ -44,73 +38,43 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        padding: EdgeInsets.symmetric(horizontal: 30),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color.fromARGB(255, 30, 50, 228),
-              Color.fromARGB(255, 194, 200, 255)
-            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
+            colors: [const Color.fromARGB(255, 30, 50, 228), const Color.fromARGB(255, 194, 200, 255)],
           ),
         ),
         child: Center(
-          child: SingleChildScrollView(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Center(
-                  child: Text(
-                    'FORGOT PASSWORD',
-                    style: TextStyle(
-                      fontSize: 25,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                SizedBox(height: 30),
                 Text(
-                  "Enter your email to receive a password reset link.",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                  "FORGOT PASSWORD",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 SizedBox(height: 20),
-                _buildTextInput('Email', controller: emailController),
-                SizedBox(height: 20),
-                Center(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Color.fromARGB(255, 30, 50, 228),
-                      padding: EdgeInsets.symmetric(vertical: 14, horizontal: 60),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    onPressed: _sendResetLink,
-                    child: Text(
-                      'SEND RESET LINK',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
+                TextField(
+                  controller: emailController,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    labelText: "Enter your email",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
-                SizedBox(height: 15),
-                Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                    child: Text(
-                      'Back to Login',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                SizedBox(height: 25),
+                ElevatedButton(
+                  onPressed: isLoading ? null : requestOtp,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color.fromARGB(255, 30, 50, 228),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    padding: EdgeInsets.symmetric(vertical: 20),
                   ),
+                  child: isLoading ? CircularProgressIndicator() : Text(" Request OTP"),
                 ),
               ],
             ),
@@ -119,20 +83,166 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       ),
     );
   }
+}
 
-  Widget _buildTextInput(String hintText, {TextEditingController? controller}) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
+class VerifyOtpScreen extends StatefulWidget {
+  final String email;
+  VerifyOtpScreen({required this.email});
+  @override
+  _VerifyOtpScreenState createState() => _VerifyOtpScreenState();
+}
+
+class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
+  TextEditingController otpController = TextEditingController();
+  bool isLoading = false;
+
+  Future<void> verifyOtp() async {
+    setState(() => isLoading = true);
+    final response = await http.post(
+      Uri.parse('http://your-backend-url/auth/verify-otp'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': widget.email, 'otp': otpController.text.trim()}),
+    );
+    setState(() => isLoading = false);
+
+    if (response.statusCode == 200) {
+      Fluttertoast.showToast(msg: "OTP Verified");
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ResetPasswordScreen(email: widget.email),
+        ),
+      );
+    } else {
+      Fluttertoast.showToast(msg: "Invalid OTP");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [const Color.fromARGB(255, 30, 50, 228), const Color.fromARGB(255, 194, 200, 255)],
+          ),
+        ),
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "VERIFY OTP",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                SizedBox(height: 20),
+                TextField(
+                  controller: otpController,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    labelText: "Enter OTP",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: isLoading ? null : verifyOtp,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color.fromARGB(255, 30, 50, 228),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: isLoading ? CircularProgressIndicator() : Text("Verify OTP"),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      child: TextField(
-        controller: controller,
-        keyboardType: TextInputType.emailAddress,
-        decoration: InputDecoration(
-          hintText: hintText,
-          border: InputBorder.none,
+    );
+  }
+}
+
+class ResetPasswordScreen extends StatefulWidget {
+  final String email;
+  ResetPasswordScreen({required this.email});
+  @override
+  _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
+}
+
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+  TextEditingController passwordController = TextEditingController();
+  bool isLoading = false;
+
+  Future<void> resetPassword() async {
+    setState(() => isLoading = true);
+    final response = await http.post(
+      Uri.parse('http://your-backend-url/auth/reset-password'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': widget.email, 'newPassword': passwordController.text.trim()}),
+    );
+    setState(() => isLoading = false);
+
+    if (response.statusCode == 200) {
+      Fluttertoast.showToast(msg: "Password reset successful");
+      Navigator.popUntil(context, (route) => route.isFirst);
+    } else {
+      Fluttertoast.showToast(msg: "Error: ${jsonDecode(response.body)['message']}");
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [const Color.fromARGB(255, 30, 50, 228), const Color.fromARGB(255, 194, 200, 255)],
+          ),
+        ),
+        child: Center(
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "RESET PASSWORD",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+                SizedBox(height: 20),
+                TextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.white,
+                    labelText: "Enter new password",
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: isLoading ? null : resetPassword,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color.fromARGB(255, 30, 50, 228),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: isLoading ? CircularProgressIndicator() : Text("Reset Password"),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

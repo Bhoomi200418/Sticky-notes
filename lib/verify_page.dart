@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({Key? key})
@@ -36,9 +35,10 @@ class _SignUpPageState extends State<SignUpPage> {
       setState(() => _isLoading = true);
       try {
         String apiUrl =
-            "https://your-postman-url.com"; // Replace with your Postman URL
+            "http://localhost:5000/api/user/signup"; // Replace with your IP
+
         final response = await http.post(
-          Uri.parse("https://your-postman-url.com/api/users/signup"),
+          Uri.parse("$apiUrl"),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
             "email": emailController.text.trim(),
@@ -46,11 +46,21 @@ class _SignUpPageState extends State<SignUpPage> {
             "confirmPassword": confirmPasswordController.text.trim(),
           }),
         );
+
+        final responseBody = jsonDecode(response.body);
+
         if (response.statusCode == 200 || response.statusCode == 201) {
-          Fluttertoast.showToast(msg: "Account created successfully!");
-          Navigator.pushReplacementNamed(context, "/notes");
+          ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Account created successfully!"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+          Navigator.pushReplacementNamed(context, "/login");
         } else {
-          final responseBody = jsonDecode(response.body);
           _showMessage(responseBody['message'] ?? 'Unknown error');
         }
       } on SocketException {
@@ -58,7 +68,7 @@ class _SignUpPageState extends State<SignUpPage> {
       } catch (e) {
         _showMessage("An error occurred: $e");
       } finally {
-        setState(() => _isLoading = false);
+        if (mounted) setState(() => _isLoading = false);
       }
     }
   }
@@ -67,7 +77,8 @@ class _SignUpPageState extends State<SignUpPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? Colors.green : const Color.fromARGB(255, 30, 50, 228),
+        backgroundColor:
+            isSuccess ? Colors.green : const Color.fromARGB(255, 30, 50, 228),
       ),
     );
   }
@@ -152,7 +163,8 @@ class _SignUpPageState extends State<SignUpPage> {
                                       : Icons.visibility_off,
                                 ),
                                 onPressed: () => setState(
-                                  () => _isPasswordVisible = !_isPasswordVisible,
+                                  () =>
+                                      _isPasswordVisible = !_isPasswordVisible,
                                 ),
                               ),
                             ),
@@ -200,7 +212,8 @@ class _SignUpPageState extends State<SignUpPage> {
                               onPressed: _isLoading ? null : _submitForm,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
-                                foregroundColor: const Color.fromARGB(255, 30, 50, 228),
+                                foregroundColor:
+                                    const Color.fromARGB(255, 30, 50, 228),
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 15, horizontal: 60),
                                 shape: RoundedRectangleBorder(

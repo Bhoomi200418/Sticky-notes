@@ -16,6 +16,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  bool rememberMe = false;
 
  Future<void> _login() async {
     final String apiUrl = 'http://localhost:5000/api/user/login';
@@ -99,7 +100,7 @@ Widget build(BuildContext context) {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => ForgotPasswordPage()), // ✅ Navigate to Forgot Password Page
+                        MaterialPageRoute(builder: (context) => ForgotPasswordScreen()), // ✅ Navigate to Forgot Password Page
                       );
                     },
                     child: Text(

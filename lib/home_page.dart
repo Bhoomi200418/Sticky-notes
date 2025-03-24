@@ -23,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   String selectedCategory = "All";
   List<Map<String, dynamic>> notes = [];
   List<Map<String, dynamic>> displayedNotes = [];
+  
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
@@ -39,6 +40,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadEmail();
     _fetchNotes();
+    displayedNotes = List.from(notes); 
   }
 
   Future<void> _fetchNotes() async {
@@ -73,29 +75,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-//   Future<void> updateNote(String noteId, String title, String content) async {
-//   final String apiUrl = 'http://localhost:5000/api/note/update/$noteId';
-
-//   try {
-//     final response = await http.put(
-//       Uri.parse(apiUrl),
-//       headers: {"Content-Type": "application/json"},
-//       body: jsonEncode({
-//         "title": title,
-//         "content": content,
-//       }),
-//     );
-
-//     if (response.statusCode == 200) {
-//       print("Note updated successfully");
-//     } else {
-//       print("Failed to update note: ${response.body}");
-//     }
-//   } catch (e) {
-//     print("Error: $e");
-//   }
-// }
-
   Future<void> _deleteNote(String id) async {
     try {
       var response = await http
@@ -111,21 +90,17 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _toggleSortByDate() {
-    if (displayedNotes.isEmpty) {
-      print("No notes to sort.");
-      return;
-    }
-
-    setState(() {
-      isSortedByDate = !isSortedByDate;
-      displayedNotes.sort((a, b) {
-        DateTime dateA = a['date'] is DateTime ? a['date'] : DateTime.now();
-        DateTime dateB = b['date'] is DateTime ? b['date'] : DateTime.now();
-        return isSortedByDate ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
-      });
+void _toggleSortByDate() {
+  setState(() {
+    isSortedByDate = !isSortedByDate;
+    notes.sort((a, b) {
+      DateTime dateA = a['date'] is String ? DateTime.parse(a['date']) : a['date'];
+      DateTime dateB = b['date'] is String ? DateTime.parse(b['date']) : b['date'];
+      return isSortedByDate ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
     });
-  }
+  });
+}
+
 
   Future<void> _loadEmail() async {
     final prefs = await SharedPreferences.getInstance();
@@ -158,8 +133,51 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('email');
-    Navigator.pushReplacementNamed(context, '/login');
+    final token = prefs.getString('token'); // Get token from storage
+
+    if (token == null) {
+      print("No token found. User not logged in.");
+      return;
+    }
+
+    try {
+      var response = await http.post(
+        Uri.parse(
+            'http://localhost:5000/api/user/logout'), // Replace with actual IP
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token" // Send token in header
+        },
+      );
+
+      print("Response Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        print("Logout successful");
+
+        await prefs.remove('email');
+        await prefs.remove('token');
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Logout successful")),
+        );
+
+        Navigator.pushReplacementNamed(context, '/login');
+      } else {
+        print("Logout failed: ${response.body}");
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Logout failed. Try again.")),
+        );
+      }
+    } catch (e) {
+      print("Error during logout: $e");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Network error. Please try again.")),
+      );
+    }
   }
 
   void _onCategorySelected(String category) {
@@ -179,20 +197,20 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _searchNotes() {
+ void _searchNotes() {
     setState(() {
-      displayedNotes = notes
-          .where((note) =>
-              note['title']
-                  .toLowerCase()
-                  .contains(searchController.text.toLowerCase()) ||
-              note['text']
-                  .toLowerCase()
-                  .contains(searchController.text.toLowerCase()))
-          .toList();
+      String query = searchController.text.toLowerCase();
+
+      if (query.isEmpty) {
+        displayedNotes = List.from(notes); // Show all notes if search is empty
+      } else {
+        displayedNotes = notes.where((note) {
+          return note['title']!.toLowerCase().contains(query) ||
+                 note['content']!.toLowerCase().contains(query);
+        }).toList();
+      }
     });
   }
-
   void _onBottomNavTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -219,23 +237,23 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _toggleSearchBar() {
+ void _toggleSearchBar() {
     setState(() {
       showSearchBar = !showSearchBar;
       if (!showSearchBar) {
         searchController.clear();
-        _filterNotes();
+        displayedNotes = List.from(notes); 
       }
     });
   }
 
-  void _selectAllNotes() {
-    setState(() {
-      for (int i = 0; i < selectedNotes.length; i++) {
-        selectedNotes[i] = true;
-      }
-    });
-  }
+  // void _selectAllNotes() {
+  //   setState(() {
+  //     for (int i = 0; i < selectedNotes.length; i++) {
+  //       selectedNotes[i] = true;
+  //     }
+  //   });
+  // }
 
   void _toggleSelectAll() {
     setState(() {
@@ -291,19 +309,35 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           if (showSearchBar)
-            TextField(
-              controller: searchController,
-              decoration: InputDecoration(
-                hintText: "Search Notes...",
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.clear),
-                  onPressed: () {
-                    searchController.clear();
-                    _searchNotes();
-                  },
-                ),
+            Container(
+              margin: EdgeInsets.all(8.0),
+              padding: EdgeInsets.symmetric(horizontal: 8.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8.0),
+                boxShadow: [BoxShadow(color: Colors.grey, blurRadius: 2.0)],
               ),
-              onChanged: (value) => _searchNotes(),
+              child: TextField(
+                controller: searchController,
+                decoration: InputDecoration(
+                  hintText: "Search Notes...",
+                  border: InputBorder.none,
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.clear),
+                    onPressed: () {
+                      setState(() {
+                        searchController.clear();
+                        showSearchBar = false;
+                        displayedNotes = List.from(notes); 
+                      });
+                      _searchNotes(); 
+                    },
+                  ),
+                ),
+                onChanged: (value) {
+                  _searchNotes();
+                },
+              ),
             ),
           SizedBox(height: 3.0),
           Row(
@@ -329,7 +363,8 @@ class _HomePageState extends State<HomePage> {
               SizedBox(width: 3),
               ElevatedButton.icon(
                 onPressed: _toggleSortByDate,
-                icon: Icon(Icons.sort, color: Colors.white),
+                icon: Icon(Icons.sort,
+                    color: Colors.white), // Check icon color & visibility
                 label: Text(isSortedByDate ? "Newest First" : "Oldest First"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromARGB(255, 82, 164, 231),
@@ -339,7 +374,7 @@ class _HomePageState extends State<HomePage> {
                     borderRadius: BorderRadius.circular(7),
                   ),
                 ),
-              ),
+              )
             ],
           ),
           SizedBox(height: 16.0),
