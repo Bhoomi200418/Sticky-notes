@@ -34,8 +34,6 @@ class _NotePageState extends State<NotePage> {
     "Wishlist",
     "Birthday"
   ];
-
-  // String? userId;
   String? token;
   Color _selectedColor = Colors.white;
   bool _isLoading = false;

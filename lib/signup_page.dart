@@ -60,81 +60,99 @@ Future<void> _sendOtp() async {
             ));
   }
 
- @override
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      backgroundColor: Colors.black,
+      body: Padding(
         padding: EdgeInsets.symmetric(horizontal: 30),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color.fromARGB(255, 30, 50, 228),
-              const Color.fromARGB(255, 194, 200, 255)
-            ],
-          ),
-        ),
         child: Center(
           child: SingleChildScrollView(
-            child: Column(
-              children: [
-                Text(
-                  'SIGN UP',
-                  style: TextStyle(
-                    fontSize: 35,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+            child: Form(
+              key: _formKey, // Use form for validation
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Sign up to your account',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
-                ),
-                SizedBox(height: 5),
-                SizedBox(height: 25),
-                _buildTextInput('Email', emailController),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color.fromARGB(255, 30, 50, 228),
-                    minimumSize: Size(100, 40), // Smaller button size
-                    padding: EdgeInsets.symmetric(horizontal: 70, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
+                  SizedBox(height: 5),
+                  Text('Please enter your details.', style: TextStyle(color: Colors.grey)),
+                  SizedBox(height: 25),
+                  TextFormField(
+                    controller: emailController,
+                    style: TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: "Email",
+                      labelStyle: TextStyle(color: Colors.white60),
+                      filled: true,
+                      fillColor: Colors.white10,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                      prefixIcon: Icon(Icons.email, color: Colors.white60),
                     ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter an email';
+                      }
+                      if (!RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").hasMatch(value)) {
+                        return 'Enter a valid email address';
+                      }
+                      return null;
+                    },
                   ),
-                  onPressed: () => _sendOtp(),
-                  child: Text(
-                    'Send OTP',
-                    style: TextStyle(
-                      fontSize: 20, // Smaller font
-                      fontWeight: FontWeight.bold,
+                  SizedBox(height: 20),
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFFFD297B),
+                          Color(0xFFFF655B),
+                          Colors.purple
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ),
-                ),
-                SizedBox(height: 15),
-                // Already have an account? Login
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Already have an account? ",
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushReplacementNamed(context, "/login");
-                      },
-                      child: Text(
-                        "Login",
-                        style: TextStyle(
-                          color: const Color.fromARGB(255, 0, 0, 0),
-                          fontWeight: FontWeight.bold,
-                      
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        elevation: 0,
+                      ),
+                      onPressed: _sendOtp,
+                      child: Text(
+                        'Send OTP',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                  SizedBox(height: 15),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text("Already have an account? ", style: TextStyle(color: Colors.white, fontSize: 16)),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushReplacementNamed(context, "/login");
+                        },
+                        child: Text(
+                          "Login",
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -142,27 +160,32 @@ Future<void> _sendOtp() async {
     );
   }
 
-  Widget _buildTextInput(String hintText, TextEditingController controller) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextField(
-        controller: controller,
-        decoration: InputDecoration(
-          hintText: hintText,
-          border: InputBorder.none,
-        ),
-      ),
-    );
-  }
+
+
+
+
+
+  // Widget _buildTextInput(String hintText, TextEditingController controller) {
+  //   return Container(
+  //     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       borderRadius: BorderRadius.circular(10),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black26,
+  //           blurRadius: 4,
+  //           offset: Offset(0, 2),
+  //         ),
+  //       ],
+  //     ),
+  //     child: TextField(
+  //       controller: controller,
+  //       decoration: InputDecoration(
+  //         hintText: hintText,
+  //         border: InputBorder.none,
+  //       ),
+  //     ),
+  //   );
+  // }
 }
