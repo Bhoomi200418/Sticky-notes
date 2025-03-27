@@ -109,27 +109,8 @@ void _toggleSortByDate() {
     });
   }
 
-  void _changeColor(Color color) {
-    setState(() {
-      // _selectedColor = color;
-    });
-  }
 
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text("Error"),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: Text("OK"),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();

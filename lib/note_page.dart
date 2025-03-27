@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,7 +34,7 @@ class _NotePageState extends State<NotePage> {
     "Birthday"
   ];
   String? token;
-  Color _selectedColor = Colors.white;
+ 
   bool _isLoading = false;
   bool isEditing = true;
  String? existingNoteId;

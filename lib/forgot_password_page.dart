@@ -26,58 +26,84 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => VerifyOtpScreen(email: emailController.text.trim()),
+          builder: (context) =>
+              VerifyOtpScreen(email: emailController.text.trim()),
         ),
       );
     } else {
-      Fluttertoast.showToast(msg: "Error: ${jsonDecode(response.body)['message']}");
+      Fluttertoast.showToast(
+          msg: "Error: ${jsonDecode(response.body)['message']}");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [const Color.fromARGB(255, 30, 50, 228), const Color.fromARGB(255, 194, 200, 255)],
-          ),
-        ),
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "FORGOT PASSWORD",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Forgot Password?",
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              ),
+              SizedBox(height: 10),
+              Text(
+                "Enter your email to receive an OTP",
+                style: TextStyle(color: Colors.white60),
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: emailController,
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  hintText: "Email",
+                  hintStyle: TextStyle(color: Colors.white54),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  prefixIcon: Icon(Icons.email, color: Colors.white60),
                 ),
-                SizedBox(height: 20),
-                TextField(
-                  controller: emailController,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    labelText: "Enter your email",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFFFD297B),
+                      Color(0xFFFF655B),
+                      Colors.purple
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                SizedBox(height: 25),
-                ElevatedButton(
+                child: ElevatedButton(
                   onPressed: isLoading ? null : requestOtp,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color.fromARGB(255, 30, 50, 228),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    padding: EdgeInsets.symmetric(vertical: 20),
+                    backgroundColor: Colors
+                        .transparent, // Transparent so gradient is visible
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    minimumSize: Size(double.infinity, 50),
                   ),
-                  child: isLoading ? CircularProgressIndicator() : Text(" Request OTP"),
+                  child: isLoading
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text("Request OTP",
+                          style: TextStyle(color: Colors.white, fontSize: 16)),
                 ),
-              ],
-            ),
+              )
+            ],
           ),
         ),
       ),
@@ -99,9 +125,10 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   Future<void> verifyOtp() async {
     setState(() => isLoading = true);
     final response = await http.post(
-      Uri.parse('http://your-backend-url/auth/verify-otp'),
+      Uri.parse('http://localhost:5000/api/user/verify-otp-login'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': widget.email, 'otp': otpController.text.trim()}),
+      body:
+          jsonEncode({'email': widget.email, 'otp': otpController.text.trim()}),
     );
     setState(() => isLoading = false);
 
@@ -121,47 +148,62 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [const Color.fromARGB(255, 30, 50, 228), const Color.fromARGB(255, 194, 200, 255)],
-          ),
-        ),
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "VERIFY OTP",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+      backgroundColor: Colors.black, // Match login page
+      body: Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "VERIFY OTP",
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white),
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: otpController,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.white70,
+                  labelText: "Enter OTP",
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
-                SizedBox(height: 20),
-                TextField(
-                  controller: otpController,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    labelText: "Enter OTP",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Color(0xFFFD297B),
+                      Color(0xFFFF655B),
+                      Colors.purple
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                SizedBox(height: 20),
-                ElevatedButton(
+                child: ElevatedButton(
                   onPressed: isLoading ? null : verifyOtp,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color.fromARGB(255, 30, 50, 228),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20)),
                     padding: EdgeInsets.symmetric(vertical: 14),
+                    minimumSize: Size(double.infinity, 50),
                   ),
-                  child: isLoading ? CircularProgressIndicator() : Text("Verify OTP"),
+                  child: isLoading
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text("Verify OTP",
+                          style: TextStyle(color: Colors.white, fontSize: 16)),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -179,23 +221,48 @@ class ResetPasswordScreen extends StatefulWidget {
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   TextEditingController passwordController = TextEditingController();
   bool isLoading = false;
+  bool obscurePassword = true;
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
+  bool obscureConfirmPassword = true;
 
-  Future<void> resetPassword() async {
-    setState(() => isLoading = true);
+Future<void> resetPassword() async {
+  // Input validation
+  if (passwordController.text.trim().isEmpty) {
+    Fluttertoast.showToast(msg: "Password cannot be empty");
+    return;
+  }
+  if (passwordController.text.trim().length < 6) {
+    Fluttertoast.showToast(msg: "Password must be at least 6 characters");
+    return;
+  }
+
+  setState(() => isLoading = true);
+
+  try {
     final response = await http.post(
-      Uri.parse('http://your-backend-url/auth/reset-password'),
+      Uri.parse('http://localhost:5000/api/user/reset-password'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': widget.email, 'newPassword': passwordController.text.trim()}),
+      body: jsonEncode({
+        'email': widget.email,
+        'newPassword': passwordController.text.trim(),
+      }),
     );
+
     setState(() => isLoading = false);
 
     if (response.statusCode == 200) {
       Fluttertoast.showToast(msg: "Password reset successful");
       Navigator.popUntil(context, (route) => route.isFirst);
     } else {
-      Fluttertoast.showToast(msg: "Error: ${jsonDecode(response.body)['message']}");
+      final responseData = jsonDecode(response.body);
+      Fluttertoast.showToast(msg: "Error: ${responseData['message'] ?? 'Unknown error'}");
     }
+  } catch (e) {
+    setState(() => isLoading = false);
+    Fluttertoast.showToast(msg: "Network error: ${e.toString()}");
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -205,7 +272,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [const Color.fromARGB(255, 30, 50, 228), const Color.fromARGB(255, 194, 200, 255)],
+            colors: [Colors.black, Colors.black],
           ),
         ),
         child: Center(
@@ -215,30 +282,100 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  "RESET PASSWORD",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                  "Reset Password",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 SizedBox(height: 20),
+                // New Password Field
                 TextField(
                   controller: passwordController,
-                  obscureText: true,
+                  obscureText: obscurePassword,
+                  style: TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Colors.grey[900],
                     labelText: "Enter new password",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    labelStyle: TextStyle(color: Colors.white70),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.white70,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          obscurePassword = !obscurePassword;
+                        });
+                      },
+                    ),
                   ),
                 ),
                 SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: isLoading ? null : resetPassword,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color.fromARGB(255, 30, 50, 228),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    padding: EdgeInsets.symmetric(vertical: 14),
+                // Confirm Password Field
+                TextField(
+                  controller: confirmPasswordController,
+                  obscureText: obscureConfirmPassword,
+                  style: TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.grey[900],
+                    labelText: "Confirm new password",
+                    labelStyle: TextStyle(color: Colors.white),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                        color: Colors.white70,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          obscureConfirmPassword = !obscureConfirmPassword;
+                        });
+                      },
+                    ),
                   ),
-                  child: isLoading ? CircularProgressIndicator() : Text("Reset Password"),
+                ),
+                SizedBox(height: 20),
+                GestureDetector(
+                  onTap: isLoading ? null : resetPassword,
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Color(0xFFFD297B),
+                          Color(0xFFFF655B),
+                          Colors.purple
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Center(
+                      child: isLoading
+                          ? CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                              "Reset Password",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
                 ),
               ],
             ),
