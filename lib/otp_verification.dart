@@ -45,7 +45,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
     if (!mounted) return;
 
-    if (response.statusCode == 201 && responseData['email'] != null) {
+    if (response.statusCode == 200 && responseData['email'] != null) {
       String verifiedEmail = responseData['email'];
       _showMessage("OTP verified successfully!", isSuccess: true);
 

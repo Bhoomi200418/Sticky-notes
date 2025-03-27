@@ -226,43 +226,44 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       TextEditingController();
   bool obscureConfirmPassword = true;
 
-Future<void> resetPassword() async {
-  // Input validation
-  if (passwordController.text.trim().isEmpty) {
-    Fluttertoast.showToast(msg: "Password cannot be empty");
-    return;
-  }
-  if (passwordController.text.trim().length < 6) {
-    Fluttertoast.showToast(msg: "Password must be at least 6 characters");
-    return;
-  }
-
-  setState(() => isLoading = true);
-
-  try {
-    final response = await http.post(
-      Uri.parse('http://localhost:5000/api/user/reset-password'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': widget.email,
-        'newPassword': passwordController.text.trim(),
-      }),
-    );
-
-    setState(() => isLoading = false);
-
-    if (response.statusCode == 200) {
-      Fluttertoast.showToast(msg: "Password reset successful");
-      Navigator.popUntil(context, (route) => route.isFirst);
-    } else {
-      final responseData = jsonDecode(response.body);
-      Fluttertoast.showToast(msg: "Error: ${responseData['message'] ?? 'Unknown error'}");
+  Future<void> resetPassword() async {
+    // Input validation
+    if (passwordController.text.trim().isEmpty) {
+      Fluttertoast.showToast(msg: "Password cannot be empty");
+      return;
     }
-  } catch (e) {
-    setState(() => isLoading = false);
-    Fluttertoast.showToast(msg: "Network error: ${e.toString()}");
+    if (passwordController.text.trim().length < 6) {
+      Fluttertoast.showToast(msg: "Password must be at least 6 characters");
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:5000/api/user/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': widget.email,
+          'new_password': passwordController.text.trim(),
+        }),
+      );
+
+      setState(() => isLoading = false);
+
+      if (response.statusCode == 200) {
+        Fluttertoast.showToast(msg: "Password reset successful");
+        Navigator.popUntil(context, (route) => route.isFirst);
+      } else {
+        final responseData = jsonDecode(response.body);
+        Fluttertoast.showToast(
+            msg: "Error: ${responseData['message'] ?? 'Unknown error'}");
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      Fluttertoast.showToast(msg: "Network error: ${e.toString()}");
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
