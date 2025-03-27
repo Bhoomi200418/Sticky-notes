@@ -137,7 +137,10 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ResetPasswordScreen(email: widget.email),
+          builder: (context) => ResetPasswordScreen(
+            email: widget.email,
+            otp: otpController.text.trim(),
+          ),
         ),
       );
     } else {
@@ -213,14 +216,24 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
-  ResetPasswordScreen({required this.email});
+  final String otp;
+
+  ResetPasswordScreen({required this.email, required this.otp});
   @override
   _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
 }
 
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   TextEditingController passwordController = TextEditingController();
+  TextEditingController otpController = TextEditingController();
   bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    otpController.text = widget.otp; // Set OTP from previous screen
+  }
+
   bool obscurePassword = true;
   final TextEditingController confirmPasswordController =
       TextEditingController();
@@ -246,6 +259,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         body: jsonEncode({
           'email': widget.email,
           'new_password': passwordController.text.trim(),
+          'otp': otpController.text.trim()
         }),
       );
 
@@ -288,6 +302,21 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 20),
+                // OTP Box
+                TextField(
+                  controller: otpController,
+                  readOnly: true, // Set as read-only
+                  style: TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Colors.grey[900],
+                    labelText: "OTP",
+                    labelStyle: TextStyle(color: Colors.white70),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
                 SizedBox(height: 20),
