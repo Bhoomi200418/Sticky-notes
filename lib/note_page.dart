@@ -88,9 +88,23 @@ Future<void> _updateNote(String noteId, String title, String content, String cat
   print("📌 Category: $category");
 
   try {
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    if (token == null) {
+      print("❌ Error: No authentication token found.");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Unauthorized: Please log in again.")),
+      );
+      return;
+    }
+
     var response = await http.put(
       Uri.parse('http://localhost:5000/api/note/update/$noteId'),
-      headers: {"Content-Type": "application/json"},
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",  // 🔹 Added Authorization Header
+      },
       body: jsonEncode({
         "title": title,
         "content": content,
@@ -99,31 +113,27 @@ Future<void> _updateNote(String noteId, String title, String content, String cat
     );
 
     if (response.statusCode == 200) {
-      print("Note updated successfully");
+      print("✅ Note updated successfully");
 
-      // Show a success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Note updated successfully!")),
       );
 
-      Navigator.pop(context, true); 
+      Navigator.pop(context, true);
     } else {
-      print("Failed to update note: ${response.body}");
-
-      // Show an error message if the update fails
+      print("❌ Failed to update note: ${response.body}");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to update note. Try again.")),
+        SnackBar(content: Text("Failed to update note. ${jsonDecode(response.body)['error']}")),
       );
     }
   } catch (e) {
-    print("Error updating note: $e");
-
-    // Show an error message in case of an exception
+    print("❌ Error updating note: $e");
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text("An error occurred. Please try again.")),
     );
   }
 }
+
 
  Future<void> _createNote(BuildContext context) async {
     if (titleController.text.trim().isEmpty) {

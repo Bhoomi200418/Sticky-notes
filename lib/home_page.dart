@@ -23,7 +23,7 @@ class _HomePageState extends State<HomePage> {
   String selectedCategory = "All";
   List<Map<String, dynamic>> notes = [];
   List<Map<String, dynamic>> displayedNotes = [];
-  
+
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _selectedDay = DateTime.now();
   DateTime _focusedDay = DateTime.now();
@@ -40,33 +40,46 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _loadEmail();
     _fetchNotes();
-    displayedNotes = List.from(notes); 
+    displayedNotes = List.from(notes);
   }
 
   Future<void> _fetchNotes() async {
     try {
-      var response =
-          await http.get(Uri.parse('http://localhost:5000/api/note/all'));
+      final prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('token'); // Retrieve token
+
+      if (token == null) {
+        print("Error: No token found in local storage");
+        return;
+      }
+
+      var response = await http.get(
+        Uri.parse('http://localhost:5000/api/note/all'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization':
+              'Bearer $token', // Pass token in Authorization header
+        },
+      );
 
       if (response.statusCode == 200) {
-        List<Map<String, dynamic>> fetchedNotes =
-            List<Map<String, dynamic>>.from(json.decode(response.body));
+        final Map<String, dynamic> responseData = json.decode(response.body);
 
-        for (var note in fetchedNotes) {
-          if (note['date'] != null && note['date'].toString().isNotEmpty) {
-            note['date'] = DateTime.tryParse(note['date']) ?? DateTime.now();
-          } else {
-            note['date'] = DateTime.now(); // Assign a default date if null
-          }
+        if (responseData.containsKey('notes') &&
+            responseData['notes'] is List) {
+          List<Map<String, dynamic>> fetchedNotes =
+              List<Map<String, dynamic>>.from(responseData['notes']);
+
+          setState(() {
+            notes = fetchedNotes;
+            displayedNotes = List.from(notes);
+            selectedNotes = List.filled(notes.length, false);
+          });
+
+          print("Fetched notes: ${notes.length}");
+        } else {
+          print("Error: 'notes' key not found or invalid format.");
         }
-
-        setState(() {
-          notes = fetchedNotes;
-          displayedNotes = List.from(notes);
-          selectedNotes = List.filled(notes.length, false);
-        });
-
-        print("Fetched notes: ${notes.length}");
       } else {
         print("Error fetching notes: ${response.body}");
       }
@@ -74,33 +87,49 @@ class _HomePageState extends State<HomePage> {
       print('Error fetching notes: $e');
     }
   }
+Future<void> _deleteNote(String id) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
 
-  Future<void> _deleteNote(String id) async {
-    try {
-      var response = await http
-          .delete(Uri.parse('http://localhost:5000/api/note/delete/$id'));
-      if (response.statusCode == 200) {
-        setState(() {
-          notes.removeWhere((note) => note['_id'] == id);
-          displayedNotes = List.from(notes);
-        });
-      }
-    } catch (e) {
-      print('Error deleting note: $e');
+    if (token == null) {
+      print('❌ Error: No token found in SharedPreferences');
+      return;
     }
+
+    var response = await http.delete(
+      Uri.parse('http://localhost:5000/api/note/delete/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token', // ✅ Pass the token
+      },
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        notes.removeWhere((note) => note['_id'] == id);
+        displayedNotes = List.from(notes);
+      });
+      print('✅ Note deleted successfully');
+    } else {
+      print("❌ Error deleting note: ${response.body}");
+    }
+  } catch (e) {
+    print('❌ Error deleting note: $e');
   }
-
-void _toggleSortByDate() {
-  setState(() {
-    isSortedByDate = !isSortedByDate;
-    notes.sort((a, b) {
-      DateTime dateA = a['date'] is String ? DateTime.parse(a['date']) : a['date'];
-      DateTime dateB = b['date'] is String ? DateTime.parse(b['date']) : b['date'];
-      return isSortedByDate ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
-    });
-  });
 }
-
+  void _toggleSortByDate() {
+    setState(() {
+      isSortedByDate = !isSortedByDate;
+      notes.sort((a, b) {
+        DateTime dateA =
+            a['date'] is String ? DateTime.parse(a['date']) : a['date'];
+        DateTime dateB =
+            b['date'] is String ? DateTime.parse(b['date']) : b['date'];
+        return isSortedByDate ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
+      });
+    });
+  }
 
   Future<void> _loadEmail() async {
     final prefs = await SharedPreferences.getInstance();
@@ -108,9 +137,6 @@ void _toggleSortByDate() {
       _email = prefs.getString('email') ?? 'No email found';
     });
   }
-
-
-
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
@@ -178,7 +204,7 @@ void _toggleSortByDate() {
     });
   }
 
- void _searchNotes() {
+  void _searchNotes() {
     setState(() {
       String query = searchController.text.toLowerCase();
 
@@ -187,11 +213,12 @@ void _toggleSortByDate() {
       } else {
         displayedNotes = notes.where((note) {
           return note['title']!.toLowerCase().contains(query) ||
-                 note['content']!.toLowerCase().contains(query);
+              note['content']!.toLowerCase().contains(query);
         }).toList();
       }
     });
   }
+
   void _onBottomNavTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -218,12 +245,12 @@ void _toggleSortByDate() {
     }
   }
 
- void _toggleSearchBar() {
+  void _toggleSearchBar() {
     setState(() {
       showSearchBar = !showSearchBar;
       if (!showSearchBar) {
         searchController.clear();
-        displayedNotes = List.from(notes); 
+        displayedNotes = List.from(notes);
       }
     });
   }
@@ -309,9 +336,9 @@ void _toggleSortByDate() {
                       setState(() {
                         searchController.clear();
                         showSearchBar = false;
-                        displayedNotes = List.from(notes); 
+                        displayedNotes = List.from(notes);
                       });
-                      _searchNotes(); 
+                      _searchNotes();
                     },
                   ),
                 ),
@@ -324,23 +351,23 @@ void _toggleSortByDate() {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              ElevatedButton.icon(
-                onPressed: _toggleSelectAll,
-                icon: Icon(
-                    isSelectAll
-                        ? Icons.check_box
-                        : Icons.check_box_outline_blank,
-                    color: const Color.fromARGB(255, 255, 255, 255)),
-                label: Text("Select All"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 82, 164, 231),
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 7),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
+              // ElevatedButton.icon(
+              //   onPressed: _toggleSelectAll,
+              //   icon: Icon(
+              //       isSelectAll
+              //           ? Icons.check_box
+              //           : Icons.check_box_outline_blank,
+              //       color: const Color.fromARGB(255, 255, 255, 255)),
+              //   label: Text("Select All"),
+              //   style: ElevatedButton.styleFrom(
+              //     backgroundColor: const Color.fromARGB(255, 82, 164, 231),
+              //     foregroundColor: Colors.white,
+              //     padding: EdgeInsets.symmetric(vertical: 10, horizontal: 7),
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(6),
+              //     ),
+              //   ),
+              // ),
               SizedBox(width: 3),
               ElevatedButton.icon(
                 onPressed: _toggleSortByDate,
@@ -375,17 +402,17 @@ void _toggleSortByDate() {
                       return Card(
                         color: filteredNotes[index]['color'],
                         child: ListTile(
-                          leading: Checkbox(
-                            value: selectedNotes[index],
-                            activeColor:
-                                const Color.fromARGB(255, 255, 255, 255),
-                            checkColor: Color.fromARGB(255, 82, 164, 231),
-                            onChanged: (value) {
-                              setState(() {
-                                selectedNotes[index] = value ?? false;
-                              });
-                            },
-                          ),
+                          // leading: Checkbox(
+                          //   value: selectedNotes[index],
+                          //   activeColor:
+                          //       const Color.fromARGB(255, 255, 255, 255),
+                          //   checkColor: Color.fromARGB(255, 82, 164, 231),
+                          //   onChanged: (value) {
+                          //     setState(() {
+                          //       selectedNotes[index] = value ?? false;
+                          //     });
+                          //   },
+                          // ),
                           title: GestureDetector(
                             onTap: () async {
                               final updatedNote = await Navigator.push(

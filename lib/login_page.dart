@@ -17,56 +17,55 @@ class _LoginPageState extends State<LoginPage> {
   bool rememberMe = false;
 
   Future<void> _login() async {
-  final String apiUrl = 'http://localhost:5000/api/user/login';
+    final String apiUrl = 'http://localhost:5000/api/user/login';
 
-  try {
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      body: jsonEncode({
-        'email': emailController.text.trim(),
-        'password': passwordController.text.trim(),
-      }),
-      headers: {'Content-Type': 'application/json'},
-    );
-
-    print('Response Status Code: ${response.statusCode}');
-    print('Full API Response: ${response.body}');
-
-    final responseData = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('email', responseData['email']);
-      await prefs.setString('userId', responseData['userId']);
-      await prefs.setString('token', responseData['token']);
-      print('Saved Email in SharedPreferences: ${responseData['email']}');
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        body: jsonEncode({
+          'email': emailController.text.trim(),
+          'password': passwordController.text.trim(),
+        }),
+        headers: {'Content-Type': 'application/json'},
       );
-    } else {
-      // Extract error message from API
-      String errorMessage = responseData.containsKey('message')
-          ? responseData['message']
-          : 'Login failed';
 
-      if (errorMessage.toLowerCase().contains('invalid credentials')) {
-        errorMessage = 'Password is incorrect';
+      print('Response Status Code: ${response.statusCode}');
+      print('Full API Response: ${response.body}');
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('email', responseData['email']);
+        await prefs.setString('userId', responseData['userId']);
+        await prefs.setString('token', responseData['token']);
+        print('Saved Email in SharedPreferences: ${responseData['email']}');
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomePage()),
+        );
+      } else {
+        // Extract error message from API
+        String errorMessage = responseData.containsKey('message')
+            ? responseData['message']
+            : 'Login failed';
+
+        if (errorMessage.toLowerCase().contains('invalid credentials')) {
+          errorMessage = 'Password is incorrect';
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage)),
+        );
       }
-
+    } catch (error) {
+      print('Error: $error');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
+        SnackBar(content: Text('Error connecting to server')),
       );
     }
-  } catch (error) {
-    print('Error: $error');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error connecting to server')),
-    );
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
