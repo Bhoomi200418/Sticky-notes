@@ -15,6 +15,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool rememberMe = false;
+   bool _isObscure = true;
 
   Future<void> _login() async {
     final String apiUrl = 'http://localhost:5000/api/user/login';
@@ -113,7 +114,7 @@ class _LoginPageState extends State<LoginPage> {
                 SizedBox(height: 20),
                 TextField(
                   controller: passwordController,
-                  obscureText: true,
+                  obscureText: _isObscure,
                   style: TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: "Password",
@@ -125,7 +126,17 @@ class _LoginPageState extends State<LoginPage> {
                       borderSide: BorderSide.none,
                     ),
                     prefixIcon: Icon(Icons.lock, color: Colors.white60),
-                    suffixIcon: Icon(Icons.visibility, color: Colors.white60),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isObscure ? Icons.visibility : Icons.visibility_off,
+                        color: Colors.white60,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isObscure = !_isObscure;
+                        });
+                      },
+                    ),
                   ),
                 ),
                 SizedBox(height: 10),

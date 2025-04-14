@@ -5,8 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:sticky_notes/login_page.dart';
 
 class SignUpPage extends StatefulWidget {
-  const SignUpPage({Key? key})
-      : super(key: key); // Remove email from constructor
+  const SignUpPage({Key? key}) : super(key: key);
   @override
   _SignUpPageState createState() => _SignUpPageState();
 }
@@ -26,7 +25,7 @@ class _SignUpPageState extends State<SignUpPage> {
     final Map<String, dynamic>? args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
     if (args != null && args.containsKey('email')) {
-      emailController.text = args['email']; // Set the email from arguments
+      emailController.text = args['email'];
     }
   }
 
@@ -34,8 +33,7 @@ class _SignUpPageState extends State<SignUpPage> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        String apiUrl =
-            "http://localhost:5000/api/user/signup"; // Replace with your IP
+        String apiUrl = "http://localhost:5000/api/user/signup";
 
         final response = await http.post(
           Uri.parse("$apiUrl"),
@@ -191,16 +189,16 @@ class _SignUpPageState extends State<SignUpPage> {
                           ? "Passwords do not match!"
                           : null,
                     ),
-                    SizedBox(height: 20), // Added space
+                    SizedBox(height: 20),
                     Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                         colors: [
-                          Color(0xFFFD297B),
-                          Color(0xFFFF655B),
-                          Colors.purple
-                        ],
+                          colors: [
+                            Color(0xFFFD297B),
+                            Color(0xFFFF655B),
+                            Colors.purple
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -236,8 +234,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          backgroundColor:
-                              Colors.transparent, // Needed for gradient effect
+                          backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
                           elevation: 0,
                         ),
@@ -246,7 +243,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white, // Ensure text is visible
+                            color: Colors.white,
                           ),
                         ),
                       ),

@@ -58,7 +58,7 @@ class _HomePageState extends State<HomePage> {
         headers: {
           'Content-Type': 'application/json',
           'Authorization':
-              'Bearer $token', // Pass token in Authorization header
+              'Bearer $token',
         },
       );
 
@@ -87,47 +87,54 @@ class _HomePageState extends State<HomePage> {
       print('Error fetching notes: $e');
     }
   }
-Future<void> _deleteNote(String id) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final String? token = prefs.getString('token');
 
-    if (token == null) {
-      print('❌ Error: No token found in SharedPreferences');
-      return;
+  Future<void> _deleteNote(String id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? token = prefs.getString('token');
+
+      if (token == null) {
+        print('❌ Error: No token found in SharedPreferences');
+        return;
+      }
+
+      var response = await http.delete(
+        Uri.parse('http://localhost:5000/api/note/delete/$id'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          notes.removeWhere((note) => note['_id'] == id);
+          displayedNotes = List.from(notes);
+        });
+        print('✅ Note deleted successfully');
+      } else {
+        print("❌ Error deleting note: ${response.body}");
+      }
+    } catch (e) {
+      print('❌ Error deleting note: $e');
     }
-
-    var response = await http.delete(
-      Uri.parse('http://localhost:5000/api/note/delete/$id'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token', // ✅ Pass the token
-      },
-    );
-
-    if (response.statusCode == 200) {
-      setState(() {
-        notes.removeWhere((note) => note['_id'] == id);
-        displayedNotes = List.from(notes);
-      });
-      print('✅ Note deleted successfully');
-    } else {
-      print("❌ Error deleting note: ${response.body}");
-    }
-  } catch (e) {
-    print('❌ Error deleting note: $e');
   }
-}
+
   void _toggleSortByDate() {
     setState(() {
       isSortedByDate = !isSortedByDate;
+
+      
       notes.sort((a, b) {
-        DateTime dateA =
-            a['date'] is String ? DateTime.parse(a['date']) : a['date'];
-        DateTime dateB =
-            b['date'] is String ? DateTime.parse(b['date']) : b['date'];
+        DateTime dateA = a['date'] is String ? DateTime.parse(a['date']) : a['date'];
+        DateTime dateB = b['date'] is String ? DateTime.parse(b['date']) : b['date'];
+
+        
         return isSortedByDate ? dateB.compareTo(dateA) : dateA.compareTo(dateB);
       });
+
+     
+      displayedNotes = List.from(notes);
     });
   }
 
@@ -140,7 +147,7 @@ Future<void> _deleteNote(String id) async {
 
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token'); // Get token from storage
+    final token = prefs.getString('token'); 
 
     if (token == null) {
       print("No token found. User not logged in.");
@@ -150,10 +157,10 @@ Future<void> _deleteNote(String id) async {
     try {
       var response = await http.post(
         Uri.parse(
-            'http://localhost:5000/api/user/logout'), // Replace with actual IP
+            'http://localhost:5000/api/user/logout'), 
         headers: {
           "Content-Type": "application/json",
-          "Authorization": "Bearer $token" // Send token in header
+          "Authorization": "Bearer $token"
         },
       );
 
@@ -209,11 +216,16 @@ Future<void> _deleteNote(String id) async {
       String query = searchController.text.toLowerCase();
 
       if (query.isEmpty) {
-        displayedNotes = List.from(notes); // Show all notes if search is empty
+        displayedNotes = List.from(notes); 
       } else {
         displayedNotes = notes.where((note) {
-          return note['title']!.toLowerCase().contains(query) ||
-              note['content']!.toLowerCase().contains(query);
+          final title = note['title']?.toLowerCase() ?? '';
+          final content = note['content']?.toLowerCase() ?? '';
+          final category = note['category']?.toLowerCase() ?? '';
+
+          return title.contains(query) ||
+              content.contains(query) ||
+              category.contains(query);
         }).toList();
       }
     });
@@ -255,67 +267,53 @@ Future<void> _deleteNote(String id) async {
     });
   }
 
-  // void _selectAllNotes() {
-  //   setState(() {
-  //     for (int i = 0; i < selectedNotes.length; i++) {
-  //       selectedNotes[i] = true;
-  //     }
-  //   });
-  // }
-
-  void _toggleSelectAll() {
-    setState(() {
-      isSelectAll = !isSelectAll;
-      for (int i = 0; i < selectedNotes.length; i++) {
-        selectedNotes[i] = isSelectAll;
-      }
-    });
-  }
-
   Widget _buildTasksScreen() {
     List<Map<String, dynamic>> filteredNotes = selectedCategory == "All"
-        ? notes
-        : notes.where((note) => note['category'] == selectedCategory).toList();
+        ? displayedNotes
+        : displayedNotes
+            .where((note) => note['category'] == selectedCategory)
+            .toList();
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
+          // Category Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: categories
-                  .map((category) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                        child: ChoiceChip(
-                          label: Text(
-                            category,
-                            style: TextStyle(
-                              color: selectedCategory == category
-                                  ? Colors.white // Text color when selected
-                                  : Colors
-                                      .black, // Text color when not selected
-                            ),
+                  .map(
+                    (category) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: ChoiceChip(
+                        label: Text(
+                          category,
+                          style: TextStyle(
+                            color: selectedCategory == category
+                                ? Colors.white
+                                : Colors.black,
                           ),
-                          backgroundColor:
-                              Colors.grey[300]!, // Default background color
-                          selectedColor: const Color.fromARGB(255, 82, 164,
-                              231), // Background color when selected
-                          side: BorderSide(
-                              color: const Color.fromRGBO(
-                                  61, 184, 233, 1)), // Optional border
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          onSelected: (bool selected) {
-                            _onCategorySelected(category);
-                          },
-                          selected: selectedCategory == category,
                         ),
-                      ))
+                        backgroundColor: Colors.grey[300]!,
+                        selectedColor: const Color.fromARGB(255, 0, 0, 0),
+                        side: BorderSide(
+                            color: const Color.fromARGB(255, 255, 255, 255)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        onSelected: (bool selected) {
+                          _onCategorySelected(category);
+                        },
+                        selected: selectedCategory == category,
+                      ),
+                    ),
+                  )
                   .toList(),
             ),
           ),
+
+          // Search Bar
           if (showSearchBar)
             Container(
               margin: EdgeInsets.all(8.0),
@@ -338,54 +336,17 @@ Future<void> _deleteNote(String id) async {
                         showSearchBar = false;
                         displayedNotes = List.from(notes);
                       });
-                      _searchNotes();
+                      _searchNotes(); 
                     },
                   ),
                 ),
                 onChanged: (value) {
-                  _searchNotes();
+                  _searchNotes(); 
                 },
               ),
             ),
           SizedBox(height: 3.0),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              // ElevatedButton.icon(
-              //   onPressed: _toggleSelectAll,
-              //   icon: Icon(
-              //       isSelectAll
-              //           ? Icons.check_box
-              //           : Icons.check_box_outline_blank,
-              //       color: const Color.fromARGB(255, 255, 255, 255)),
-              //   label: Text("Select All"),
-              //   style: ElevatedButton.styleFrom(
-              //     backgroundColor: const Color.fromARGB(255, 82, 164, 231),
-              //     foregroundColor: Colors.white,
-              //     padding: EdgeInsets.symmetric(vertical: 10, horizontal: 7),
-              //     shape: RoundedRectangleBorder(
-              //       borderRadius: BorderRadius.circular(6),
-              //     ),
-              //   ),
-              // ),
-              SizedBox(width: 3),
-              ElevatedButton.icon(
-                onPressed: _toggleSortByDate,
-                icon: Icon(Icons.sort,
-                    color: Colors.white), // Check icon color & visibility
-                label: Text(isSortedByDate ? "Newest First" : "Oldest First"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 82, 164, 231),
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 10, horizontal: 7),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                ),
-              )
-            ],
-          ),
-          SizedBox(height: 16.0),
+          SizedBox(height: 5.0),
           Expanded(
             child: filteredNotes.isEmpty
                 ? Center(child: Text("Click here to create your first task"))
@@ -401,18 +362,11 @@ Future<void> _deleteNote(String id) async {
 
                       return Card(
                         color: filteredNotes[index]['color'],
+                        shape: RoundedRectangleBorder(
+                          side: BorderSide(color: Colors.black, width: 2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: ListTile(
-                          // leading: Checkbox(
-                          //   value: selectedNotes[index],
-                          //   activeColor:
-                          //       const Color.fromARGB(255, 255, 255, 255),
-                          //   checkColor: Color.fromARGB(255, 82, 164, 231),
-                          //   onChanged: (value) {
-                          //     setState(() {
-                          //       selectedNotes[index] = value ?? false;
-                          //     });
-                          //   },
-                          // ),
                           title: GestureDetector(
                             onTap: () async {
                               final updatedNote = await Navigator.push(
@@ -449,11 +403,9 @@ Future<void> _deleteNote(String id) async {
                           trailing: IconButton(
                             icon: Icon(Icons.delete),
                             onPressed: () async {
-                              String noteId = filteredNotes[index]
-                                  ['_id']; // Get the note ID
+                              String noteId = filteredNotes[index]['_id'];
 
-                              await _deleteNote(
-                                  noteId); // Call the delete function
+                              await _deleteNote(noteId);
 
                               setState(() {
                                 notes.removeWhere(
@@ -478,7 +430,7 @@ Future<void> _deleteNote(String id) async {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.person,
-              size: 100, color: const Color.fromARGB(255, 8, 104, 189)),
+              size: 100, color: const Color.fromARGB(255, 0, 0, 0)),
           SizedBox(height: 10),
           Text(_email ?? 'Loading...',
               style: TextStyle(
@@ -487,7 +439,7 @@ Future<void> _deleteNote(String id) async {
           ElevatedButton(
             onPressed: _logout,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromARGB(255, 82, 164, 231),
+              backgroundColor: const Color.fromARGB(255, 0, 0, 0),
               foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -520,6 +472,35 @@ Future<void> _deleteNote(String id) async {
               _calendarFormat = format;
             });
           },
+          calendarStyle: CalendarStyle(
+            selectedDecoration: BoxDecoration(
+              color: const Color.fromARGB(
+                  255, 0, 0, 0), 
+              shape: BoxShape.circle,
+            ),
+            todayDecoration: BoxDecoration(
+              color: const Color.fromARGB(
+                  255, 0, 0, 0), 
+              shape: BoxShape.circle,
+            ),
+            defaultTextStyle:
+                TextStyle(color: Colors.black), 
+            weekendTextStyle:
+                TextStyle(color: Colors.red), 
+            outsideDaysVisible: false,
+          ),
+          daysOfWeekStyle: DaysOfWeekStyle(
+            weekendStyle: TextStyle(color: const Color.fromARGB(255, 0, 0, 0)),
+            weekdayStyle: TextStyle(color: Colors.black),
+          ),
+          headerStyle: HeaderStyle(
+            formatButtonTextStyle: TextStyle(color: Colors.white),
+            formatButtonDecoration: BoxDecoration(
+              color: const Color.fromARGB(255, 0, 0, 0),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            titleTextStyle: TextStyle(color: Colors.black, fontSize: 18),
+          ),
         ),
       ],
     );
@@ -529,11 +510,27 @@ Future<void> _deleteNote(String id) async {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Sticky Notes "),
-        backgroundColor: const Color.fromARGB(255, 19, 186, 236),
+        title: Text(
+          "Sticky Notes",
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: const Color.fromARGB(255, 5, 5, 5),
         actions: [
+          ElevatedButton(
+            onPressed: _toggleSortByDate,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color.fromARGB(255, 2, 2, 2),
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.all(10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(7),
+              ),
+            ),
+            child: Icon(Icons.sort, color: Colors.white, size: 33),
+          ),
+          SizedBox(width: 3),
           IconButton(
-            icon: Icon(Icons.search),
+            icon: Icon(Icons.search, color: Colors.white, size: 33),
             onPressed: _toggleSearchBar,
           ),
         ],
@@ -546,15 +543,16 @@ Future<void> _deleteNote(String id) async {
       floatingActionButton: _selectedIndex == 0
           ? FloatingActionButton(
               onPressed: _navigateToNotePage,
-              backgroundColor:
-                  const Color.fromARGB(255, 82, 164, 231), // Background color
-              child: Icon(Icons.add,
-                  color: Colors.white), // Icon color for contrast
+              backgroundColor: const Color.fromARGB(255, 0, 0, 0),
+              child: Icon(Icons.add, color: Colors.white),
             )
           : null,
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onBottomNavTapped,
+        selectedItemColor: Colors.white, 
+        unselectedItemColor: Colors.grey, 
+        backgroundColor: Colors.black,
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.list), label: "Tasks"),
           BottomNavigationBarItem(

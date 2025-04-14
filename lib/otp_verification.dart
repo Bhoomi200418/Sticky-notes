@@ -23,16 +23,14 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   }
 
   Future<void> _verifyOTP() async {
-    String otp = otpControllers
-        .map((controller) => controller.text)
-        .join(); // Get OTP from all fields
+    String otp = otpControllers.map((controller) => controller.text).join();
 
     if (otp.isEmpty || otp.length < 6) {
       _showMessage("Please enter a valid 6-digit OTP.");
       return;
     }
 
-    print("🔍 Entered OTP: $otp"); // Debugging
+    print("🔍 Entered OTP: $otp");
 
     final url = Uri.parse('http://localhost:5000/api/user/verify-otp');
     final response = await http.post(

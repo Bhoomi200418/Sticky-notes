@@ -13,37 +13,35 @@ class _SignupPageState extends State<SignupPage> {
   final TextEditingController emailController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-Future<void> _sendOtp() async {
-  final String apiUrl = 'http://localhost:5000/api/user/send-otp';
-  
-  final response = await http.post(
-    Uri.parse(apiUrl),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode({'email': emailController.text}),
-  );
+  Future<void> _sendOtp() async {
+    final String apiUrl = 'http://localhost:5000/api/user/send-otp';
 
-  final responseData = jsonDecode(response.body);
-
-  if (response.statusCode == 200) {
-    // Store email in SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('email', emailController.text);
-    
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            OtpVerificationPage(email: emailController.text),
-      ),
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': emailController.text}),
     );
-  } else if (response.statusCode == 400 && responseData['message'] == "User already exists") {
-    _showErrorDialog("User already exists. Please log in.");
-  } else {
-    _showErrorDialog("Failed to send OTP. Try again.");
+
+    final responseData = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('email', emailController.text);
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) =>
+              OtpVerificationPage(email: emailController.text),
+        ),
+      );
+    } else if (response.statusCode == 400 &&
+        responseData['message'] == "User already exists") {
+      _showErrorDialog("User already exists. Please log in.");
+    } else {
+      _showErrorDialog("Failed to send OTP. Try again.");
+    }
   }
-}
-
-
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -60,7 +58,6 @@ Future<void> _sendOtp() async {
             ));
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,10 +73,14 @@ Future<void> _sendOtp() async {
                 children: [
                   Text(
                     'Sign up to your account',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                    style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
                   ),
                   SizedBox(height: 5),
-                  Text('Please enter your details.', style: TextStyle(color: Colors.grey)),
+                  Text('Please enter your details.',
+                      style: TextStyle(color: Colors.grey)),
                   SizedBox(height: 25),
                   TextFormField(
                     controller: emailController,
@@ -99,7 +100,9 @@ Future<void> _sendOtp() async {
                       if (value == null || value.isEmpty) {
                         return 'Please enter an email';
                       }
-                      if (!RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$").hasMatch(value)) {
+                      if (!RegExp(
+                              r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+                          .hasMatch(value)) {
                         return 'Enter a valid email address';
                       }
                       return null;
@@ -131,7 +134,10 @@ Future<void> _sendOtp() async {
                       onPressed: _sendOtp,
                       child: Text(
                         'Send OTP',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white),
                       ),
                     ),
                   ),
@@ -139,14 +145,16 @@ Future<void> _sendOtp() async {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Already have an account? ", style: TextStyle(color: Colors.white, fontSize: 16)),
+                      Text("Already have an account? ",
+                          style: TextStyle(color: Colors.white, fontSize: 16)),
                       GestureDetector(
                         onTap: () {
                           Navigator.pushReplacementNamed(context, "/login");
                         },
                         child: Text(
                           "Login",
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
@@ -159,33 +167,4 @@ Future<void> _sendOtp() async {
       ),
     );
   }
-
-
-
-
-
-
-  // Widget _buildTextInput(String hintText, TextEditingController controller) {
-  //   return Container(
-  //     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-  //     decoration: BoxDecoration(
-  //       color: Colors.white,
-  //       borderRadius: BorderRadius.circular(10),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: Colors.black26,
-  //           blurRadius: 4,
-  //           offset: Offset(0, 2),
-  //         ),
-  //       ],
-  //     ),
-  //     child: TextField(
-  //       controller: controller,
-  //       decoration: InputDecoration(
-  //         hintText: hintText,
-  //         border: InputBorder.none,
-  //       ),
-  //     ),
-  //   );
-  // }
 }
